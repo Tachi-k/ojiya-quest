@@ -1,0 +1,841 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>おぢやクエスト</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<style>
+/* Layout: one pixel screen (15×11 tiles, DQ-style black windows) above a thumb-sized D-pad. Single dark look by choice. */
+:root{
+  --bg:#0c0e18; --line:#f3f0ff; --ink:#f3f0ff; --dim:#8d93b8;
+  --gold:#ffd25e; --hurt:#ff8a5c; --key:#20253f; --keyline:#4c5584;
+  --font:"DotGothic16","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--font);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 22px;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+#screen{position:relative;width:100%;aspect-ratio:15/11;background:#000;border-radius:6px;overflow:hidden;container-type:inline-size;box-shadow:0 0 0 2px #000,0 0 0 4px var(--keyline)}
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.win{position:absolute;background:#000;color:var(--ink);border:2px solid var(--line);border-radius:7px;box-shadow:0 0 0 2px #000;font-size:clamp(11px,3.6vw,17px);font-size:min(4.1cqw,19px);line-height:1.55;padding:.35em .7em;z-index:5}
+#msg{left:2.5%;right:2.5%;bottom:3%;height:35%;white-space:pre-wrap;overflow:hidden;cursor:pointer}
+#msgMore{position:absolute;right:.6em;bottom:.15em;animation:blink 1s steps(1) infinite}
+#stat{left:2.5%;top:3.5%;min-width:27%;line-height:1.35}
+#stat .nm{border-bottom:2px solid var(--line);margin-bottom:.15em;padding-bottom:.1em;white-space:nowrap}
+#stat .row{display:flex;justify-content:space-between;gap:.6em;font-variant-numeric:tabular-nums}
+#stat.low{color:var(--hurt);border-color:var(--hurt)}
+#ehp{right:2.5%;top:3.5%;min-width:36%;max-width:48%;line-height:1.35}
+#ehp .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ehp .row{display:flex;justify-content:space-between;gap:.6em;font-variant-numeric:tabular-nums}
+#ehp .bar{height:.45em;margin-top:.2em;background:#2a2d40;border:1px solid var(--dim);border-radius:2px;overflow:hidden}
+#ehp .bar i{display:block;height:100%;background:#5fd36a;transition:width .3s}
+#ehp.mid .bar i{background:var(--gold)}#ehp.low .bar i{background:var(--hurt)}
+#menu{right:2.5%;top:3.5%;min-width:40%;max-height:76%;overflow-y:auto}
+#menu.bcmd{left:2.5%;right:2.5%;top:auto;bottom:3%;display:grid;grid-template-columns:1fr 1fr;column-gap:1em;max-height:none}
+#menu.bsub{top:auto;bottom:3%;right:2.5%}
+#menu.tmenu{left:50%;right:auto;top:auto;bottom:7%;transform:translateX(-50%);min-width:44%}
+.mtitle{grid-column:1/-1;color:var(--dim);border-bottom:1px solid var(--dim);margin-bottom:.15em;font-size:.86em}
+.mi{display:flex;gap:.25em;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;line-height:1.55}
+.mi:focus-visible{outline:1px dashed var(--gold)}
+.mi .cur{visibility:hidden;width:.9em;flex:none}
+.mi.on .cur{visibility:visible;animation:blink 1s steps(1) infinite}
+.mi .r{margin-left:auto;padding-left:1em;color:var(--dim);font-variant-numeric:tabular-nums}
+.mi[aria-disabled="true"] .lbl{color:var(--dim)}
+#info{left:6%;right:6%;top:5%;max-height:90%;overflow:auto;cursor:pointer}
+#info .g{display:grid;grid-template-columns:auto auto;column-gap:1.4em;font-variant-numeric:tabular-nums}
+#info .g span:nth-child(even){text-align:right}
+#info h3{margin:0 0 .2em;font-weight:400;color:var(--gold);font-size:1em}
+#area{position:absolute;left:2.5%;top:3.5%;z-index:4;background:rgba(0,0,0,.72);border:1px solid rgba(243,240,255,.5);border-radius:5px;padding:.1em .55em;font-size:min(3.4cqw,15px);pointer-events:none}
+#logo{position:absolute;left:0;right:0;top:9%;text-align:center;z-index:4;pointer-events:none}
+#logo .t1{font-size:min(6cqw,26px);color:#fff;letter-spacing:.3em;text-shadow:2px 2px 0 #000}
+#logo .t2{font-size:min(14cqw,66px);color:var(--gold);letter-spacing:.06em;line-height:1.05;text-shadow:3px 3px 0 #7a2a14,6px 6px 0 #000}
+#logo .t3{margin-top:.4em;font-size:min(3.8cqw,17px);color:#fff;text-shadow:2px 2px 0 #000;letter-spacing:.1em}
+#mapwin{position:absolute;inset:0;background:#000;z-index:8;display:grid;place-items:center;cursor:pointer}
+#mapwin canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:6% 50%;image-rendering:pixelated}
+#mapwin .src{position:absolute;right:2%;bottom:10%;width:33%;font-size:min(2.1cqw,10px);line-height:1.4;color:var(--dim)}
+#mapwin .legend{position:absolute;right:2%;top:3%;width:33%;font-size:min(2.9cqw,13px);line-height:1.45;color:var(--ink)}
+#mapwin .legend h4{margin:0 0 .2em;font-weight:400;color:var(--gold);font-size:1em}
+#mapwin .legend div{display:flex;justify-content:space-between;gap:.4em;border-bottom:1px dotted rgba(141,147,184,.4)}
+#mapwin .legend span:last-child{color:var(--gold);white-space:nowrap}
+#mapwin .cap{position:absolute;right:2%;bottom:2%;font-size:min(3.2cqw,14px);color:var(--dim)}
+#pad{display:flex;justify-content:space-between;align-items:center;gap:12px;touch-action:none}
+.dpad{display:grid;grid-template-columns:repeat(3,min(16vw,62px));grid-template-rows:repeat(3,min(16vw,62px));gap:4px}
+.k{background:var(--key);border:2px solid var(--keyline);color:var(--ink);border-radius:10px;font:inherit;font-size:20px;display:grid;place-items:center;touch-action:none;cursor:pointer;padding:0}
+.k.down{background:var(--keyline)}
+.k:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.dpad .u{grid-area:1/2}.dpad .l{grid-area:2/1}.dpad .r{grid-area:2/3}.dpad .d{grid-area:3/2}
+.dpad .c{grid-area:2/2;background:transparent;border-color:transparent}
+.ab{display:flex;gap:14px;align-items:center}
+.ab .k{width:min(19vw,74px);height:min(19vw,74px);border-radius:50%;font-size:22px}
+.ab .a{transform:translateY(-16px);border-color:var(--gold)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--dim);font-size:13px;flex-wrap:wrap}
+#snd{background:none;border:1px solid var(--keyline);color:var(--dim);border-radius:6px;font:inherit;padding:.25em .7em;cursor:pointer}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.mi.on .cur,#msgMore{animation:none}}
+</style>
+
+<div id="app">
+  <div id="screen">
+    <canvas id="cv" aria-label="ゲーム画面"></canvas>
+    <div id="area" hidden></div>
+    <div id="logo" hidden><div class="t1">おぢや</div><div class="t2">クエスト</div><div class="t3">〜 どんより大王と 三つの宝 〜</div></div>
+    <div id="stat" class="win" hidden></div>
+    <div id="ehp" class="win" hidden></div>
+    <div id="info" class="win" hidden></div>
+    <div id="msg" class="win" hidden><span id="msgText"></span><span id="msgMore" hidden>▼</span></div>
+    <div id="menu" class="win" hidden></div>
+    <div id="mapwin" hidden><canvas id="mapcv"></canvas><div class="cap">A / B で とじる</div><div class="legend" id="legend"></div><div class="src">市境界：国勢調査 境界データ（ROIS-DS）／標高：国土地理院／川・道路：© OpenStreetMap contributors</div></div>
+  </div>
+  <div id="pad">
+    <div class="dpad">
+      <button class="k u" data-k="up" aria-label="うえ">▲</button>
+      <button class="k l" data-k="left" aria-label="ひだり">◀</button>
+      <span class="k c" aria-hidden="true"></span>
+      <button class="k r" data-k="right" aria-label="みぎ">▶</button>
+      <button class="k d" data-k="down" aria-label="した">▼</button>
+    </div>
+    <div class="ab">
+      <button class="k b" data-k="B" aria-label="Bボタン（もどる・メニュー）">B</button>
+      <button class="k a" data-k="A" aria-label="Aボタン（けってい・しらべる）">A</button>
+    </div>
+  </div>
+  <div class="foot"><span>A：けってい／しらべる　B：もどる／メニュー<br>キーボード：矢印・WASD　Z/Enter＝A　X/Esc＝B</span><button id="snd" type="button">♪ おと ON</button></div>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const TS=16,VW=15,VH=11,W=57,H=67;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv=$('#cv');cv.width=VW*TS;cv.height=VH*TS;
+const ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
+const G=0,F=1,HL=2,M=3,WA=4,BR=5,RD=6,PD=7,SL=8,SN=9,OUT=10,EX=11,RL=12,TW=13,ST=14;
+const WALK=new Set([G,F,HL,BR,RD,PD,SN,RL,TW,ST]);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function mul(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function mk(w=TS,h=TS){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return[c,g]}
+const px=(g,c,x,y,w=1,h=1)=>{g.fillStyle=c;g.fillRect(x,y,w,h)};
+const EL=(g,c,x,y,rx,ry)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill()};
+const PG=(g,c,pts)=>{g.fillStyle=c;g.beginPath();pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.closePath();g.fill()};
+
+/* ---------- 小千谷マップ（市境界：国勢調査 境界データ / 地形：国土地理院 標高 / 川・道路・鉄道：OpenStreetMap から作成） ---------- */
+const ROWS=["XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXGXXGEXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXFGHRGEGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXFFHHRGEGGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXFFSHRRSEGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXFFGSRREEHXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXFFGGRRRHHGXXXXWXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXFFFGGHREHHGGRGGWXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXFFFGGHREHHGGRRGWWXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXFFFGHRREHHGGSRRGWWXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXFFFFGHHRRGGGGSGGRWWXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXFFFFGHHERRGGGGSGRGWWXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXFFFGGHEGRGGGGGSRGGWXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXFFGHHEGRRGGGGSRGGWXXXXXXXXXMhhMXXXXXXXXXXXXX", "XXXXXXXXXXXXhFFGGSEGGRGGGSGGRGWXXXXXXXXXXhMMXXXXXXXXXXXXX", "XXXXXXXXXXXXhFFGGEEGGRHGGSGGRRBBXXXXXXXXhhMMMXXXXXXXXXXXX", "XXXXXXXXXXXhhFFFGEEGGRRGGSGRRGXWXXXXXhhFhMMMMMXXXXXXXXXXX", "XXXXXXXXXXXhFFFHHRRGGGRGGSGRGGGWXFFhFFFFhMMMMMXXXXXXXXXXX", "XXXXXXXXXXXhhFFFHEEGGRRGSGRRGGWWLFRRRRFFhhhhhMXXXXXXXXXXX", "XXXXXXXXXXXhhFFFHGEGHRHSSGGRGWWRRRRRRRRRFhhhhXXXXXXXXXXXX", "XXXXXXXXXXhhFFFFHHEGRRGSGGRRBWLRFFFFFFRFRFhhXXXXXXXXXXXXX", "XXXXXXXXXXhhhFFFHHRGRRGGGHRWBRRRFFhhhFhhSRSFXXXXXXXXXXXXX", "XXXXXXXXXXhhhFFFFGRGHRGGSRRWRRRFFFhhhhhhhRRRXXXXXXXXXXXXX", "XXXXXXXXXXhhhhFFFHRHHRGGHRWWRRGFFhhhhhhhhShXXXXXXXXXXXXXX", "XXXXXXXXXXXhhFFSSHEHHRRRRWWGRRGFFFFhFhFhhSRhSXXXXXXXXXXXX", "XXXXXXXXXXhhhhSFHEEHRRSSGWGRRRFFGGFFFFFhRRRRhXXXXXXXXXXXX", "XXXXXXXXXXhhSSSFHEHRHRGSWWGRRFhhFFFFFFhhRhRRRMMMXXXXXXXXX", "XXXXXXXXXXRRRFFRRRRRRRRRBRGRRFFhFFhFFFhhRhhhRRMMMhhXXXXXX", "XXXXXXXXXXhhRRRRHEHRRRRHWRRRRRFhhhhhFFXhFhhhMRRRMhhXXXXXX", "XXXXXXXXXXXhFFFGHERRSRGGWGHLLRRhhhhhFFXXXXXXMRRRMMhRXXXXX", "XXXXXXXXXXMhFFGGHERHRRGGWGRRRHRhFFhhhFXXXXXhRRRhMhhhRRhXX", "XXXXXXXXXhhFFFGHHHRRRGGGWRRGRRRRFFhhXhXXXXXXXRRShhFFSRhhX", "XXXXXXXXXhhFFFFGGHRRRRRRWRRRGLRRRFFXXXXXXXXXXXXXShhSRRhhh", "XXXXXXXXXMhhhFFGGRRSRGGGWRGRGGLLRRFXXXXXXXXXXXXXShhhSRRSX", "XXXXXXXXhRRRhFFFHREERGGWWWWBWWWWWRRXXXXXXXXXXXXXXhhFSXXXX", "XXXXXXXXRRFRRRRRRHHRRGGWFFWFRRWGWWWXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXMhhFRFFFHHRRFFFFWWFFFRRGGWXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXMhFFFFFFFRRFFFFFhhhFFRWWWXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXMMhFhFFFFRRRFFhhhhhhhFRWWXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXhhhhhhhhFFRFRRFhhMMhhFHRWWXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXhhhhhhFFFRRFFREEhhhhhHFFXWWXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXhhFFFFFFFRSFSRhERRRRRRRRRRXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXhhhhhhhhFRFFSRhHHEEERRGGRRXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXhhhhFFFFRFhSFRFFFFFRGWGGRRXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXhhhhhFFFRRhhSFRFFFFRWWWWWGRWWXXXXXXXXXXXXXXXXXXXX", "XXXXXXXhhhhhhhRRRFhhhhRRRRFWWGGGWWHWXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXhhhhhhhRhhhhhhhhhRRRWGFGGWWWWXXXXXXXXXXXXXXXXXXXXX", "XXXXXXhhhFhhhRRhhhhhhFhRRFRWFFFGWWWWFFXXXXXXXXXXXXXXXXXXX", "XXXXXhhhhFhhRRFFFFFhhFFRFRWWFFFLGWWWFRRXXXXXXXXXXXXXXXXXX", "XXXXXhhhhhRRRFFFFFFFFRRRFRWWhLLLLLLLLRRXXXXXXXXXXXXXXXXXX", "XXXXhhhhFFRRFFFFFFFFRRWWWBWWLhhhhhhhSFXXXXXXXXXXXXXXXXXXX", "XXXXhhhhhRRhhhhhhFRWWWWRRRRRRhhMMMhhSXXXXXXXXXXXXXXXXXXXX", "XXXXhhRRRRhhhhhhFRWWRRRLFFFFRhhMMhXXXXXXXXXXXXXXXXXXXXXXX", "XXXXhRRRFhhFFhhFFWWRRLLFFhhFRFhhMXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXhRhFhhhhhFFFRWGRLFFFhhhhFRhhhXXXXXXXXXXXXXXXXXXXXXXXX", "XXXhRRhhhhhhhFFFRWWLFFFFFhhMhRRhhhXXXXXXXXXXXXXXXXXXXXXXX", "XXMRRhhhhhhhhFFFRGWLFFhhhhhMhFRhhXXXXXXXXXXXXXXXXXXXXXXXX", "XXRRhhhhhhhhhFFRFGBFFhFhhhhMMRRMhXXXXXXXXXXXXXXXXXXXXXXXX", "XRRMMMhhhhhFFFFRFGWFFFhhhhhhMRRhhhXXXXXXXXXXXXXXXXXXXXXXX", "XXhhhhhhhhhFFFRFFWWFFFhhhhhhhhRhhhhXXXXXXXXXXXXXXXXXXXXXX", "XXXXhhhhFFFFFFRSWWXXFFFFFFFhhhRRRhhXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXFXXXWXXXXXXXXXXFFFhhRRhSXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXhhhRhSXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXhhRhXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXhRhXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"];
+const SX=27,SY=27;
+const LOC={
+  '27,27':{id:'station',n:'小千谷駅'},
+  '22,26':{id:'honcho',n:'本町（市役所前）'},
+  '22,27':{id:'koi',n:'錦鯉の里'},
+  '22,30':{id:'park',n:'船岡公園'},
+  '30,29':{id:'chijimi',n:'ちぢみの里'},
+  '18,5':{id:'katakai',n:'片貝（浅原神社）'},
+  '39,18':{id:'east',n:'小千谷闘牛場'},
+  '43,13':{id:'kanakura',n:'金倉山展望台'},
+  '27,35':{id:'odyaru',n:'おぢゃ～る'},
+  '26,39':{id:'summit',n:'山本山 山頂'},
+  '11,51':{id:'matoonsen',n:'真人温泉'},
+  '7,53':{id:'tofu',n:'真人豆腐店'},
+};
+const BRIDGES={'30,15':'越の大橋','31,15':'越の大橋','28,20':'小千谷大橋','28,21':'小千谷大橋','24,27':'旭橋','27,34':'山本大橋','25,50':'川井大橋','18,57':'魚沼橋'};
+const PLACES=[['片貝町',18,7],['高梨町',26,11],['鴻巣町',17,14],['小粟田',23,16],['坪野',16,17],['三仏生',28,18],['山谷',15,21],['千谷',24,22],['横渡',31,22],['浦柄',35,22],['小栗山',38,18],['南荷頃',39,23],['塩谷',49,31],['千谷川',23,24],['平沢',22,24],['城内',22,26],['本町',23,28],['東栄',27,28],['旭町',27,30],['薭生',32,28],['桜町',15,26],['船岡',23,30],['土川',20,30],['若葉',19,30],['両新田',17,30],['時水',13,31],['上ノ山',21,31],['藪川',18,32],['西中',22,33],['山本',26,35],['上片貝',31,36],['谷内',22,37],['四ツ子',20,38],['東吉谷',13,40],['西吉谷',17,43],['塩殿',31,43],['池ケ原',22,44],['池中新田',23,45],['川井',30,52],['真人町',11,53],['豊久新田',19,53],['岩沢',23,57]];
+const CH={G:G,F:F,h:HL,M:M,W:WA,B:BR,R:RD,X:OUT,E:EX,L:RL,H:TW,S:ST};
+const SUM=[26,39];let SEAL=[];
+let map;
+function genMap(){
+  map=ROWS.map(r=>[...r].map(c=>CH[c]));
+  const d=(x,y)=>Math.hypot(x-SUM[0],y-SUM[1]);SEAL=[];
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const r=d(x,y);if(r>=2.5&&r<3.6&&WALK.has(map[y][x])){SEAL.push([x,y,map[y][x]]);map[y][x]=SL}}
+}
+function openSeal(){SEAL.forEach(([x,y,t])=>map[y][x]=t)}
+const dist=(x,y,a,b)=>Math.hypot(x-a,y-b);
+function zoneAt(x,y){if(dist(x,y,...SUM)<3.6)return 4;if(y>=44&&x<20)return 5;if(x>=33&&y<=30)return 3;const d=dist(x,y,SX,SY);return d<12?1:d<24?2:3}
+function areaName(x,y){const l=LOC[x+','+y];if(l)return l.n;const t=map[y][x];if(t===BR)return BRIDGES[x+','+y]||'信濃川の橋';if(t===WA)return'信濃川';if(t===EX)return'関越自動車道';if(t===SL)return'くろい雲の けっかい';if(dist(x,y,...SUM)<3.6)return'山本山';let best=PLACES[0],bd=1e9;for(const p of PLACES){const v=dist(x,y,p[1],p[2]);if(v<bd){bd=v;best=p}}return best[0]}
+
+/* ---------- タイル ---------- */
+const TI={};
+function speckle(g,base,dots,seed){g.fillStyle=base;g.fillRect(0,0,16,16);const r=mul(seed);for(const[c,n]of dots){g.fillStyle=c;for(let i=0;i<n;i++)g.fillRect(r()*16|0,r()*16|0,1,1)}}
+function buildTiles(){
+  const grass=(g,s)=>speckle(g,'#5d9e45',[['#4b8a37',14],['#78b85a',8]],s);
+  for(let v=0;v<2;v++){const[c,g]=mk();grass(g,11+v);TI['g'+v]=c}
+  [['#2f6b34','#46924a'],['#c9702a','#e8a04a'],['#b8392b','#dc6a48'],['#d9a52b','#f2c95a']].forEach(([d,l],i)=>{
+    const[c,g]=mk();grass(g,30+i);px(g,'#5a3b22',7,11,2,4);
+    [[5,2,6],[3,3,10],[2,4,12],[2,5,12],[2,6,12],[2,7,12],[3,8,10],[4,9,8],[6,10,4]].forEach(([x,y,w])=>px(g,d,x,y,w,1));
+    [[6,3,3],[4,4,4],[4,5,3],[4,6,2]].forEach(([x,y,w])=>px(g,l,x,y,w,1));TI['f'+i]=c});
+  {const[c,g]=mk();grass(g,51);[[4,8,8],[3,9,10],[2,10,12],[1,11,14],[1,12,14]].forEach(([x,y,w],i)=>px(g,i?'#4f8f3c':'#86c466',x,y,w,1));TI.h=c}
+  {const[c,g]=mk();grass(g,52);PG(g,'#7d7266',[[0,16],[8,1],[16,16]]);PG(g,'#5d544b',[[8,1],[16,16],[9,16]]);PG(g,'#f2f5fb',[[5,6],[8,1],[11,6],[9,5],[8,6],[7,5]]);TI.m=c}
+  for(let f=0;f<2;f++){const[c,g]=mk();px(g,'#2f6fc4',0,0,16,16);px(g,'#6aa3e8',(2+f*4)%16,3,4,1);px(g,'#6aa3e8',(10+f*4)%16,8,4,1);px(g,'#4a86d6',(5+f*4)%16,12,5,1);TI['w'+f]=c}
+  {const[c,g]=mk();g.drawImage(TI.w0,0,0);px(g,'#a87a46',0,2,16,12);for(let x=0;x<16;x+=4)px(g,'#7a5532',x,2,1,12);px(g,'#6e4c2a',0,2,16,1);px(g,'#6e4c2a',0,13,16,1);TI.b=c}
+  {const[c,g]=mk();speckle(g,'#c8a66a',[['#b08c52',12],['#dcc08a',8]],61);TI.r=c}
+  {const[c,g]=mk();px(g,'#8e7140',0,0,16,16);for(let y=1;y<16;y+=4)for(let x=1;x<16;x+=3)px(g,'#c9a85c',x,y,1,2);px(g,'#6f5530',0,0,16,1);px(g,'#6f5530',0,0,1,16);TI.p=c}
+  for(let f=0;f<2;f++){const[c,g]=mk();px(g,'#24183a',0,0,16,16);g.lineWidth=1.5;g.strokeStyle='#6a4ca8';g.beginPath();g.arc(8,8,5.5,f*1.6,f*1.6+3.8);g.stroke();g.strokeStyle='#a184e0';g.beginPath();g.arc(8,8,2.5,f*1.6+3,f*1.6+6);g.stroke();TI['s'+f]=c}
+  {const[c,g]=mk();speckle(g,'#e8f0fa',[['#c5d5ec',10],['#ffffff',6]],71);TI.n=c}
+  const icon=(id,draw,base='g0')=>{const[c,g]=mk();g.drawImage(TI[base],0,0);draw(g);TI['L'+id]=c};
+  {const[c,g]=mk();px(g,'#2b2f3d',0,0,16,16);PG(g,'#3c4152',[[0,16],[5,4],[10,16]]);PG(g,'#454b5e',[[6,16],[12,2],[16,10],[16,16]]);px(g,'#5a6075',11,3,2,2);TI.x=c}
+  {const[c,g]=mk();grass(g,81);px(g,'#6f7480',0,3,16,10);px(g,'#9aa0ab',0,3,16,1);px(g,'#9aa0ab',0,12,16,1);for(let x=1;x<16;x+=6)px(g,'#f2f2f2',x,7,3,1);TI.e=c}
+  {const[c,g]=mk();speckle(g,'#b9a27a',[['#a08a64',10]],91);for(let x=1;x<16;x+=3)px(g,'#6e4c2a',x,3,2,10);px(g,'#8a8f99',0,5,16,1);px(g,'#8a8f99',0,10,16,1);TI.l=c}
+  for(let v=0;v<2;v++){const[c,g]=mk();speckle(g,'#c8b896',[['#b3a37f',10]],95+v);const roof=v?'#46506e':'#7a3b2a';px(g,'#efe6d2',1,7,6,6);PG(g,roof,[[0,8],[4,4],[8,8]]);px(g,'#efe6d2',9,9,6,5);PG(g,v?'#7a3b2a':'#46506e',[[8,10],[12,6],[16,10]]);px(g,'#3a2a20',3,10,1,3);px(g,'#ffd88a',11,11,2,1);TI['t'+v]=c}
+  {const[c,g]=mk();grass(g,97);px(g,'#6aa3e8',0,6,16,4);px(g,'#bcd8f6',2,7,3,1);px(g,'#bcd8f6',10,8,3,1);TI.st=c}
+  icon('chijimi',g=>{px(g,'#e9dcc4',2,7,12,8);PG(g,'#6b4b3a',[[0,8],[8,3],[16,8]]);px(g,'#3a2a20',7,11,2,4);g.strokeStyle='#ff8a8a';g.lineWidth=1;[5,8,11].forEach(x=>{g.beginPath();g.moveTo(x,2);g.quadraticCurveTo(x+1.5,0,x,-2);g.stroke()});px(g,'#e8463a',4,9,2,2)},'r');
+  icon('kanakura',g=>{px(g,'#6e4c2a',5,6,1,9);px(g,'#6e4c2a',10,6,1,9);px(g,'#a87a46',3,5,10,2);px(g,'#a87a46',4,10,8,1);PG(g,'#46506e',[[2,5],[8,1],[14,5]])},'h');
+  icon('odyaru',g=>{PG(g,'#e8a04a',[[2,14],[8,4],[14,14]]);PG(g,'#c9702a',[[8,4],[14,14],[9,14]]);px(g,'#3a2616',7,10,2,4);px(g,'#b8392b',13,10,1,4);px(g,'#ffd25e',12,10,1,1)});
+  icon('matoonsen',g=>{px(g,'#d8c8a8',2,8,12,7);PG(g,'#3e5a3a',[[0,9],[8,4],[16,9]]);px(g,'#3a2a20',7,11,2,4);g.strokeStyle='#ffffff';g.lineWidth=1;[5,8,11].forEach(x=>{g.beginPath();g.moveTo(x,4);g.quadraticCurveTo(x+1.5,2,x,0);g.stroke()})},'h');
+  icon('tofu',g=>{px(g,'#e9dcc4',2,7,12,8);PG(g,'#5a4636',[[0,8],[8,3],[16,8]]);px(g,'#2d4c96',3,8,10,2);px(g,'#fff',6,8,1,1);px(g,'#fff',9,8,1,1);px(g,'#fffdf2',4,11,4,3);px(g,'#d9d2bd',4,13,4,1);px(g,'#3a2a20',10,11,2,4)},'r');
+  icon('station',g=>{px(g,'#d8d2c4',2,7,12,8);PG(g,'#b8382c',[[0,8],[8,2],[16,8]]);px(g,'#4a3a2a',7,11,2,4);px(g,'#7fb6e8',4,9,2,2);px(g,'#7fb6e8',10,9,2,2);px(g,'#fff',6,6,4,1)},'r');
+  icon('honcho',g=>{px(g,'#e2d6bf',1,9,7,6);PG(g,'#6b4b3a',[[0,10],[4.5,5],[9,10]]);px(g,'#e9dcc4',8,7,7,8);PG(g,'#46506e',[[7,8],[11.5,2],[16,8]]);px(g,'#3a2a20',3,11,2,4);px(g,'#ffd88a',10,10,2,2);px(g,'#ffd88a',12,12,2,1)},'r');
+  icon('katakai',g=>{px(g,'#cdb48c',3,10,10,5);PG(g,'#7a3b2a',[[2,11],[8,6],[14,11]]);px(g,'#3a2a20',7,12,2,3);[[8,0,'#ffd25e'],[5,2,'#ff6b6b'],[11,2,'#8fd3ff'],[4,4,'#ffd25e'],[12,4,'#ff6b6b'],[8,3,'#fff']].forEach(([x,y,c])=>px(g,c,x,y))});
+  icon('koi',g=>{EL(g,'#8a7a6a',8,9,7.5,5.5);EL(g,'#2f6fc4',8,9,6.5,4.5);px(g,'#ff7a3c',4,8,3,1);px(g,'#fff',5,8,1,1);px(g,'#ff7a3c',9,10,3,1);px(g,'#fff',11,10,1,1)});
+  icon('east',g=>{EL(g,'#6e4c2a',8,9,7.5,5.5);EL(g,'#d6b67c',8,9,6.5,4.5);px(g,'#3a2616',6,8,4,3);px(g,'#f3ead8',5,7,1,1);px(g,'#f3ead8',10,7,1,1);px(g,'#c8352d',6,11,4,1)});
+  icon('park',g=>{px(g,'#5a3b22',7,9,2,5);[[4,2,8],[2,3,12],[2,4,12],[3,5,10],[3,6,10],[5,7,6]].forEach(([x,y,w])=>px(g,'#d85a3e',x,y,w,1));px(g,'#f0a070',5,3,3,1);px(g,'#7a5532',1,13,6,1);px(g,'#7a5532',2,14,1,1);px(g,'#7a5532',5,14,1,1)});
+  icon('summit',g=>{px(g,'#c8352d',2,4,12,2);px(g,'#c8352d',4,7,8,1);px(g,'#c8352d',4,6,1,9);px(g,'#c8352d',11,6,1,9);px(g,'#222',2,4,12,1)},'n');
+  // よし太くんの角、ねじり鉢巻、紺のはっぴ、白いズボン。
+  const pal={y:'#ffc45d',o:'#c9792e',k:'#242333',c:'#fff2d9',w:'#f4f5f8',r:'#cd3a4f',b:'#30328e',l:'#6869bd',g:'#8192a7'};
+  const front=[
+    "....w......w....","....w......w....",".....rkwrk......","..oyykwrkwyyo...",
+    ".oyyyyyyyyyyyyo.","..oyyyyyyyyyyo..","...yykyyykyyy...","...yyycccyyyy...",
+    "....cckckcc.....",".....ccrcc......","...bbloolbb.....","...gbloolbg.....",
+    "....bboobb......",".....wwwwww.....",
+  ];
+  const back=[
+    "....w......w....","....w......w....",".....kwrkw......","..oyyrkwrkyyo...",
+    ".oyyyyyyyyyyyyo.","..oyyyyyyyyyyo..","...yyyyyyyyyy...","...yyyyyyyyyy...",
+    "....yyyyyyy.....",".....ooooo......","...bblbblbb.....","...gbbbbbbg.....",
+    "....bbbbbb......",".....wwwwww.....",
+  ];
+  const side=[
+    "......w.........","......w.........","......wrkw......","...oyrkwrky.....",
+    "..oyyyyyyyyyo...","...yyyyyyyyyyo..","...yyyyyykyyyo..","....yyyyyycccc..",
+    "....yyyyycckccc.",".....oooooccc...","....bbbbby......","....bblbby......",
+    ".....gbbby......","......wwww......",
+  ];
+  const feet=[[".....gg..gg.....",".....gg..gg....."],["....gg....gg....","....gg....gg...."]];
+  const spr=rows=>{const[c,g]=mk();rows.forEach((r,y)=>[...r].forEach((ch,x)=>{if(pal[ch])px(g,pal[ch],x,y)}));return c};
+  TI.hero={down:feet.map(legs=>spr([...front,...legs])),
+    up:feet.map(legs=>spr([...back,...legs])),
+    side:feet.map(legs=>spr([...side,...legs]))};
+}
+function tileImg(x,y,f){
+  const k=x+','+y;
+  if(LOC[k])return TI['L'+LOC[k].id];
+  const t=map[y][x],h=(x*7+y*13)%4;
+  switch(t){case G:return TI['g'+(h&1)];case F:return TI['f'+(y<10&&x>24?0:h)];case HL:return TI.h;case M:return TI.m;case WA:return TI['w'+f];case BR:return TI.b;case RD:return TI.r;case PD:return TI.p;case SL:return TI['s'+f];case SN:return TI.n;case OUT:return TI.x;case EX:return TI.e;case RL:return TI.l;case TW:return TI['t'+(h&1)];case ST:return TI.st}
+}
+
+/* ---------- データ ---------- */
+const EN={
+  yukinko:{n:'ゆきんこ',hp:5,at:3,df:0,ag:3,ex:2,g:3,s:'blob',c:['#eef6ff','#7fb0f0']},
+  gaeru:{n:'どろガエル',hp:7,at:4,df:1,ag:2,ex:3,g:4,s:'frog',c:['#6a8a3a','#3d5a20']},
+  karasu:{n:'いねかりカラス',hp:6,at:5,df:0,ag:7,ex:3,g:5,s:'bird',c:['#2a2a38','#ffb300']},
+  chijimi:{n:'ちぢみおばけ',hp:14,at:8,df:3,ag:5,ex:6,g:8,s:'ghost',c:['#e8ecf5','#3b4f8f']},
+  hegi:{n:'へぎそばへび',hp:17,at:10,df:4,ag:5,ex:8,g:10,s:'snake',c:['#8f9a7e','#5d6a4a']},
+  nobose:{n:'のぼせゴイ',hp:16,at:9,df:6,ag:4,ex:7,g:12,s:'fish',c:['#ff6a4a','#ffffff']},
+  inoshishi:{n:'やまイノシシ',hp:34,at:17,df:10,ag:6,ex:14,g:16,s:'boar',c:['#6b4a2e','#3a2616']},
+  kogarashi:{n:'こがらしこぞう',hp:28,at:19,df:8,ag:12,ex:15,g:18,s:'wind',c:['#b8e1ff','#5a8fc0'],sp:'wind'},
+  yukidaruma:{n:'あばれゆきだるま',hp:45,at:18,df:14,ag:3,ex:18,g:20,s:'snowman',c:['#ffffff','#c23b2a']},
+  raiun:{n:'かみなりぐも',hp:45,at:24,df:14,ag:12,ex:25,g:28,s:'cloud',c:['#5b5f7a','#ffe14d'],sp:'thunder'},
+  fubuki:{n:'ふぶきおに',hp:60,at:27,df:18,ag:8,ex:32,g:30,s:'oni',c:['#8fd3ff','#2a3a6a']},
+  yukionna:{n:'雪女',hp:42,at:22,df:12,ag:14,ex:24,g:26,s:'yukionna',c:['#f4f8ff','#8fb4e8'],sp:'freeze'},
+  mujina:{n:'真人むじな',hp:30,at:16,df:9,ag:11,ex:16,g:22,s:'mujina',c:['#8a6a48','#3a2a1e'],sp:'trick'},
+  shika:{n:'シカ',hp:12,at:7,df:2,ag:9,ex:5,g:6,s:'deer',c:['#a8743e','#f1e2c4']},
+  taka:{n:'タカ',hp:11,at:8,df:2,ag:12,ex:6,g:7,s:'hawk',c:['#7a5232','#f0e0c0'],sp:'double'},
+  kamoshika:{n:'カモシカ',hp:38,at:18,df:15,ag:10,ex:17,g:16,s:'serow',c:['#8a8580','#3a3530']},
+  kuma:{n:'クマ',hp:58,at:23,df:12,ag:6,ex:25,g:24,s:'bear',c:['#22202a','#f2efe6'],sp:'maul'},
+  washi:{n:'ワシ',hp:34,at:21,df:9,ag:16,ex:19,g:18,s:'eagle',c:['#4a3524','#e2b23c'],sp:'dive'},
+  daija:{n:'大蛇',hp:72,at:28,df:16,ag:8,ex:36,g:34,s:'serpent',c:['#4f6b3a','#d9c46a'],sp:'bind'},
+  ryuou:{n:'龍王',hp:140,at:35,df:21,ag:12,ex:95,g:130,s:'dragon',c:['#2f7a6a','#ffd25e'],sp:'breath',big:1},
+  tsurara:{n:'つらら騎士',hp:52,at:26,df:22,ag:9,ex:30,g:30,s:'knight',c:['#cfefff','#6aa9d8']},
+  daruma:{n:'しけりダルマ',hp:82,at:20,df:10,ag:5,ex:55,g:60,s:'daruma',c:['#c8322a','#f6e7c8'],boss:1,win:'しけりダルマは からからに かわいて ころがっていった！'},
+  kawau:{n:'カワウのおやぶん',hp:40,at:11,df:4,ag:8,ex:40,g:50,s:'cormorant',c:['#1d2230','#e2c044'],boss:1,win:'カワウのおやぶんは にげていった！'},
+  gonzo:{n:'よこづな牛ゴンゾウ',hp:120,at:25,df:14,ag:8,ex:90,g:80,s:'bull',c:['#4a2e1f','#efe2c0'],boss:1,win:'ゴンゾウは はなを ならして おとなしくなった！'},
+  donyori:{n:'どんより大王',hp:380,at:36,df:20,ag:13,ex:0,g:0,s:'king',c:['#4a4766','#ffd25e'],boss:1,win:'どんより大王は ちりぢりの くもに なって きえた！'},
+};
+const ZONES={1:['yukinko','gaeru','karasu','yukinko'],2:['chijimi','hegi','nobose','gaeru','shika','taka'],3:['inoshishi','kogarashi','yukidaruma','kuma','kamoshika','washi'],4:['raiun','fubuki','tsurara','daija','raiun','fubuki','tsurara','daija','ryuou'],5:['mujina','yukionna','mujina','kamoshika','kuma','inoshishi']};
+const WEAP=[{n:'木のえだ',a:2,p:0},{n:'竹ざお',a:5,p:20},{n:'くわ',a:9,p:60},{n:'なた',a:14,p:180},{n:'ちぢみの剣',a:21,p:450},{n:'雪割りの太刀',a:29,p:950}];
+const ARM=[{n:'わらの服',d:2,p:0},{n:'もんぺ',d:5,p:30},{n:'ちぢみの着物',d:9,p:120},{n:'ゆきよけの蓑',d:14,p:320},{n:'錦鯉のよろい',d:20,p:780}];
+const ITEMS={dango:{n:'笹だんご',p:8,hp:30},soba:{n:'へぎそば',p:30,hp:90},ame:{n:'あまざけ',p:20,mp:12},tofu:{n:'真人とうふ',p:16,hp:60,shop:'t'},age:{n:'あぶらあげ',p:24,hp:40,mp:6,shop:'t'}};
+const KEYS={tama:'三尺玉の火種',uroko:'紅白のうろこ',tsuna:'角突きの綱'};
+const SPELLS=[
+  {id:'heal',n:'ゆきどけ',mp:3,lv:3,t:'heal',p:[24,32],field:1},
+  {id:'fire',n:'ひばな',mp:3,lv:5,t:'atk',p:[12,18]},
+  {id:'warp',n:'もどりみち',mp:4,lv:7,t:'warp',field:1,fieldOnly:1},
+  {id:'heal2',n:'あさひ',mp:7,lv:10,t:'heal',p:[80,95],field:1},
+  {id:'big',n:'さんじゃくだま',mp:8,key:'tama',t:'atk',p:[45,60]},
+];
+const need=L=>Math.round(5*Math.pow(L-1,2.1));
+
+/* ---------- 状態 ---------- */
+let S=null,scene='title',busy=true,moving=null,grace=3,B=null,mapOpen=false,lastArea='';
+const atk=()=>S.str+WEAP[S.wpn].a, def=()=>S.vit+ARM[S.arm].d;
+const known=()=>SPELLS.filter(s=>s.key?S.k[s.key]:S.lv>=s.lv);
+const HERO_NAME='よし太くん';
+function newGame(){S={name:HERO_NAME,lv:1,hp:30,mhp:30,mp:6,mmp:6,str:7,vit:4,agi:5,exp:0,gold:30,wpn:0,arm:0,it:{dango:3,soba:0,ame:0},k:{},f:{},x:27,y:27,dir:'down'};S.rx=S.x;S.ry=S.y}
+const SKEY='ojiya-quest-v2';
+function save(){try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(SKEY);return s?JSON.parse(s):null}catch(e){return null}}
+function applyState(){S.name=HERO_NAME;S.rx=S.x;S.ry=S.y;genMap();if(S.f.seal)openSeal()}
+
+/* ---------- 音 ---------- */
+let AC=null,soundOn=true;
+function tone(f,d=.08,type='square',v=.04,when=0){if(!soundOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
+const jingle=(ns,st=.12,ty='square')=>ns.forEach((f,i)=>f&&tone(f,st*.9,ty,.045,i*st));
+const SFX={blip:()=>tone(1200,.02,'square',.012),sel:()=>tone(740,.05,'square',.03),hit:()=>tone(160,.12,'sawtooth',.06),hurt:()=>{tone(110,.18,'square',.07)},magic:()=>jingle([523,659,784,1047],.06,'triangle'),heal:()=>jingle([784,988,1175,1568],.07,'triangle'),enc:()=>jingle([220,330,220,440],.07),lvl:()=>jingle([523,659,784,1047,0,880,1047],.11),win:()=>jingle([659,784,988,1319],.1),get:()=>jingle([587,740,880,0,1175],.1),inn:()=>jingle([523,0,659,0,784,1047],.14,'triangle'),bump:()=>tone(90,.06,'square',.04)};
+$('#snd').onclick=()=>{soundOn=!soundOn;$('#snd').textContent=soundOn?'♪ おと ON':'♪ おと OFF'};
+
+/* ---------- UI ---------- */
+const ui={handler:null};
+const msgEl=$('#msg'),msgT=$('#msgText'),more=$('#msgMore'),menuEl=$('#menu'),statEl=$('#stat'),infoEl=$('#info');
+let lines=[];
+function say(t,o={}){
+  return new Promise(res=>{
+    if(!o.append||msgEl.hidden)lines=[];
+    lines.push('');if(lines.length>3)lines.shift();
+    msgEl.hidden=false;more.hidden=true;
+    const ch=[...t];let i=0,autoT=null,typed=false;
+    const render=()=>{lines[lines.length-1]=ch.slice(0,i).join('');msgT.textContent=lines.join('\n')};
+    const fin=()=>{clearInterval(iv);i=ch.length;render();typed=true;if(o.auto)autoT=setTimeout(done,o.auto);else more.hidden=false};
+    const iv=setInterval(()=>{i++;render();if(i%3===0)SFX.blip();if(i>=ch.length)fin()},RM?1:24);
+    function done(){clearTimeout(autoT);if(ui.handler===h)ui.handler=null;more.hidden=true;res()}
+    const h=k=>{if(k!=='A'&&k!=='B')return;if(!typed){fin();return}done()};
+    ui.handler=h;
+  });
+}
+function choose(opts,o={}){
+  return new Promise(res=>{
+    const cancel=o.cancel!==false;
+    if(o.hideMsg)msgEl.hidden=true;
+    menuEl.className='win'+(o.cls?' '+o.cls:'');menuEl.hidden=false;
+    opts=opts.map(x=>typeof x==='string'?{label:x}:x);
+    menuEl.innerHTML=(o.title?`<div class="mtitle">${o.title}</div>`:'')+opts.map((x,i)=>`<button type="button" class="mi" data-i="${i}" aria-disabled="${!!x.disabled}"><span class="cur">▶</span><span class="lbl">${x.label}</span>${x.right?`<span class="r">${x.right}</span>`:''}</button>`).join('');
+    const items=[...menuEl.querySelectorAll('.mi')];let idx=0;
+    const cols=o.cls==='bcmd'?2:1;
+    const draw=()=>items.forEach((b,i)=>b.classList.toggle('on',i===idx));draw();
+    const done=v=>{if(ui.handler!==h)return;ui.handler=null;menuEl.hidden=true;SFX.sel();res(v)};
+    const h=k=>{const n=opts.length;
+      if(k==='up')idx=(idx-cols+n)%n;else if(k==='down')idx=(idx+cols)%n;
+      else if(k==='left'&&cols>1)idx=(idx+n-1)%n;else if(k==='right'&&cols>1)idx=(idx+1)%n;
+      else if(k==='A')return done(idx);else if(k==='B'&&cancel)return done(-1);else return;
+      SFX.blip();draw()};
+    items.forEach((b,i)=>b.addEventListener('click',e=>{e.stopPropagation();idx=i;draw();done(i)}));
+    ui.handler=h;
+  });
+}
+function view(html){return new Promise(res=>{infoEl.innerHTML=html;infoEl.hidden=false;const h=k=>{if(k!=='A'&&k!=='B')return;ui.handler=null;infoEl.hidden=true;SFX.sel();res()};ui.handler=h})}
+function updStat(){if(!S)return;statEl.innerHTML=`<div class="nm">${S.name}</div><div class="row"><span>H</span><span>${S.hp}</span></div><div class="row"><span>M</span><span>${S.mp}</span></div><div class="row"><span>Lv</span><span>${S.lv}</span></div>`;statEl.classList.toggle('low',S.hp<=S.mhp/4)}
+function showStat(v=true){updStat();statEl.hidden=!v}
+function closeAll(){msgEl.hidden=true;menuEl.hidden=true;infoEl.hidden=true;statEl.hidden=true;lines=[]}
+function updArea(){const l=LOC[S.x+','+S.y];const a=areaName(S.x,S.y)+(l&&SVC[l.id]?`［${SVC[l.id]}］　Aで はいる`:l?'　Aで しらべる':'');const el=$('#area');el.textContent=a;el.hidden=scene!=='field'}
+
+/* ---------- 入力 ---------- */
+const KM={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right',Enter:'A',' ':'A',z:'A',Z:'A',Escape:'B',x:'B',X:'B',Backspace:'B'};
+const DIRS=['up','down','left','right'];let stack=[];
+const held=()=>stack[stack.length-1]||null;
+function press(k){if(ui.handler){ui.handler(k);return}if(scene==='field'&&!busy&&!moving&&(k==='A'||k==='B'))fieldAction(k)}
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=KM[e.key];if(!k)return;e.preventDefault();
+  if(DIRS.includes(k)){if(!stack.includes(k))stack.push(k);if(ui.handler)ui.handler(k)}else if(!e.repeat)press(k)});
+addEventListener('keyup',e=>{const k=KM[e.key];if(k)stack=stack.filter(x=>x!==k)});
+addEventListener('blur',()=>stack=[]);
+document.querySelectorAll('[data-k]').forEach(b=>{const k=b.dataset.k,isDir=DIRS.includes(k);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}b.classList.add('down');if(isDir){if(!stack.includes(k))stack.push(k);if(ui.handler)ui.handler(k)}else press(k)});
+  const up=()=>{b.classList.remove('down');if(isDir)stack=stack.filter(x=>x!==k)};
+  ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,up));
+  b.addEventListener('click',e=>{if(e.detail===0)press(k)});
+});
+msgEl.addEventListener('pointerdown',e=>{e.preventDefault();press('A')});
+infoEl.addEventListener('pointerdown',e=>{e.preventDefault();press('A')});
+$('#mapwin').addEventListener('pointerdown',e=>{e.preventDefault();press('A')});
+
+/* ---------- フィールド ---------- */
+const STEP=150;
+function tryMove(dir){
+  S.dir=dir;const[dx,dy]={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];
+  const nx=S.x+dx,ny=S.y+dy;if(nx<0||ny<0||nx>=W||ny>=H)return;
+  const t=map[ny][nx];
+  if(t===SL){busy=true;sealEvent().then(()=>{closeAll();busy=false});return}
+  if(t===OUT&&map[S.y][S.x]===BR&&BRIDGES[S.x+','+S.y]==='越の大橋'){busy=true;say('越の大橋は 小千谷と 長岡の さかい。ここから さきは 長岡市だ。\nいまは 小千谷の 空を とりもどすのが さきだ。ひきかえそう。').then(()=>{closeAll();busy=false;updArea()});return}
+  if(!WALK.has(t)&&!LOC[nx+','+ny]){if(!tryMove.b||performance.now()-tryMove.b>300){SFX.bump();tryMove.b=performance.now()}return}
+  moving={fx:S.x,fy:S.y,tx:nx,ty:ny,t0:performance.now()};
+}
+async function onStep(){
+  updArea();
+  const l=LOC[S.x+','+S.y];
+  if(l){busy=true;await locEvent(l.id);closeAll();busy=false;return}
+  const rate={[G]:18,[F]:11,[HL]:12,[PD]:20,[RD]:34,[SN]:9,[RL]:30,[ST]:16}[map[S.y][S.x]];
+  if(!rate)return;if(grace>0){grace--;return}
+  if(Math.random()<1/rate){busy=true;const z=ZONES[zoneAt(S.x,S.y)];await battle(z[Math.random()*z.length|0]);closeAll();busy=false;grace=3}
+}
+async function fieldAction(k){
+  busy=true;$('#area').hidden=true;
+  const l=LOC[S.x+','+S.y];
+  if(l&&k==='A')await locEvent(l.id);else await fieldMenu();
+  closeAll();busy=false;updArea();
+}
+async function fieldMenu(){
+  for(;;){
+    showStat();
+    const c=await choose(['つよさ','じゅもん','どうぐ','ちず'],{});
+    if(c<0)return;
+    if(c===0)await view(statusHTML());
+    else if(c===1){const sp=await pickSpell(false);if(sp){await castField(sp);if(sp.t==='warp')return}}
+    else if(c===2){const it=await pickItem(false);if(it)await useItem(it,false)}
+    else await showMap();
+    msgEl.hidden=true;
+  }
+}
+function statusHTML(){
+  const nx=need(S.lv+1)-S.exp;
+  const keys=Object.keys(KEYS).map(k=>`<span>${S.k[k]?'◆':'◇'} ${KEYS[k]}</span><span></span>`).join('');
+  return `<h3>${S.name}　Lv ${S.lv}</h3><div class="g"><span>HP</span><span>${S.hp} / ${S.mhp}</span><span>MP</span><span>${S.mp} / ${S.mmp}</span><span>ちから</span><span>${S.str}</span><span>みのまもり</span><span>${S.vit}</span><span>すばやさ</span><span>${S.agi}</span><span>こうげき力</span><span>${atk()}</span><span>しゅび力</span><span>${def()}</span><span>ぶき</span><span>${WEAP[S.wpn].n}</span><span>よろい</span><span>${ARM[S.arm].n}</span><span>つぎのLvまで</span><span>${nx} EXP</span><span>ゴールド</span><span>${S.gold} G</span>${keys}</div>`;
+}
+async function pickSpell(inB){
+  const ks=known().filter(s=>inB?!s.fieldOnly:s.field);
+  if(!ks.length){await say('つかえる じゅもんが ない。',{append:inB});return null}
+  const c=await choose(ks.map(s=>({label:s.n,right:s.mp+'MP',disabled:S.mp<s.mp})),{title:'じゅもん',cls:inB?'bsub':'',hideMsg:inB});
+  if(c<0)return null;const sp=ks[c];
+  if(S.mp<sp.mp){await say('MPが たりない！',{append:inB});return null}
+  return sp;
+}
+async function castField(sp){
+  S.mp-=sp.mp;updStat();await say(`${S.name}は ${sp.n}を となえた！`);
+  if(sp.t==='heal'){const v=Math.min(S.mhp-S.hp,rint(...sp.p));S.hp+=v;updStat();SFX.heal();await say(`HPが ${v} かいふくした！`,{append:1})}
+  if(sp.t==='warp'){SFX.magic();S.x=S.rx=SX;S.y=S.ry=SY;S.dir='down';await say('ひかりに つつまれて 小千谷駅へ もどった！',{append:1})}
+}
+async function pickItem(inB){
+  const ids=Object.keys(ITEMS).filter(k=>S.it[k]>0);
+  if(!ids.length){await say('どうぐを もっていない。',{append:inB});return null}
+  const c=await choose(ids.map(k=>({label:ITEMS[k].n,right:'×'+S.it[k]})),{title:'どうぐ',cls:inB?'bsub':'',hideMsg:inB});
+  return c<0?null:ids[c];
+}
+async function useItem(id,inB){
+  const it=ITEMS[id];S.it[id]--;await say(`${S.name}は ${it.n}を つかった！`,{append:inB,auto:inB?400:0});
+  if(it.hp){const v=Math.min(S.mhp-S.hp,it.hp);S.hp+=v;updStat();SFX.heal();await say(`HPが ${v} かいふくした！`,{append:1,auto:inB?600:0})}
+  if(it.mp){const v=Math.min(S.mmp-S.mp,it.mp);S.mp+=v;updStat();SFX.heal();await say(`MPが ${v} かいふくした！`,{append:1,auto:inB?600:0})}
+}
+
+/* ---------- 地図 ---------- */
+const MCOL={[G]:'#5d9e45',[F]:'#2f6b34',[HL]:'#7fb35a',[M]:'#7a6f63',[WA]:'#2f6fc4',[BR]:'#a87a46',[RD]:'#d2b47a',[PD]:'#9a7a45',[SL]:'#5b3e8c',[SN]:'#e9f1fb',[OUT]:'#1b1d28',[EX]:'#8a8f99',[RL]:'#5a4636',[TW]:'#e6dcc6',[ST]:'#7fb6ee'};
+const SVC={station:'宿・道具',honcho:'武器・防具',chijimi:'温泉・道具',matoonsen:'温泉',tofu:'とうふ',odyaru:'宿',park:'休けい'};
+const MLAB={station:['小千谷駅','left'],honcho:['本町・錦鯉の里','right'],park:['船岡公園','right'],chijimi:['ちぢみの里','left'],katakai:['片貝','left'],east:['闘牛場','center'],kanakura:['金倉山','center'],odyaru:['おぢゃ～る','left'],summit:['山本山','left'],matoonsen:['真人温泉','left'],tofu:['豆腐店','center']};
+function drawMap(t){
+  const c=$('#mapcv'),s=12;if(c.width!==W*s){c.width=W*s;c.height=H*s}
+  const g=c.getContext('2d');
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){g.fillStyle=MCOL[map[y][x]];g.fillRect(x*s,y*s,s,s)}
+  g.font='bold 30px DotGothic16, monospace';g.textBaseline='bottom';g.lineWidth=7;
+  for(const k in LOC){const[x,y]=k.split(',').map(Number);g.fillStyle='#000';g.fillRect(x*s-1,y*s-1,s+2,s+2);g.fillStyle=SVC[LOC[k].id]?'#ffd25e':'#ff7a5c';g.fillRect(x*s+1,y*s+1,s-2,s-2);
+    const lb=MLAB[LOC[k].id];if(!lb)continue;const[n,al]=lb;g.textAlign=al;g.textBaseline='middle';const tx=al==='right'?x*s-3:al==='left'?x*s+s+3:x*s+s/2,ty=al==='center'?y*s-8:y*s+s/2;g.strokeStyle='#000';g.strokeText(n,tx,ty);g.fillStyle='#fff';g.fillText(n,tx,ty)}
+  g.textBaseline='bottom';
+  g.textAlign='center';g.fillStyle='#cfe3ff';g.strokeStyle='#123';g.font='26px DotGothic16, monospace';g.lineWidth=6;
+  [[33,13,'信濃川'],[13,55,'信濃川'],[38,47,'魚野川']].forEach(([x,y,n])=>{g.strokeText(n,x*s,y*s);g.fillText(n,x*s,y*s)});
+  if((t/280|0)%2){g.fillStyle='#ff3b3b';g.fillRect(S.x*s+1,S.y*s+1,s-2,s-2)}
+}
+function showMap(){$('#legend').innerHTML='<h4>店のある場所</h4>'+Object.keys(LOC).filter(k=>SVC[LOC[k].id]).map(k=>`<div><span>${LOC[k].n.replace(/（.*）/,'')}</span><span>${SVC[LOC[k].id]}</span></div>`).join('');return new Promise(res=>{mapOpen=true;$('#mapwin').hidden=false;menuEl.hidden=true;const h=k=>{if(k!=='A'&&k!=='B')return;ui.handler=null;mapOpen=false;$('#mapwin').hidden=true;SFX.sel();res()};ui.handler=h})}
+
+/* ---------- 戦闘 ---------- */
+const sprC={};
+function enemySprite(k){
+  if(sprC[k])return sprC[k];
+  const d=EN[k],[a,b]=d.c,[c,g]=mk(40,40);
+  const E=(x,y,rx,ry,col)=>EL(g,col,x,y,rx,ry),R=(x,y,w,h,col)=>px(g,col,x,y,w,h),P=(col,pts)=>PG(g,col,pts);
+  const eye=(x,y)=>{R(x-1,y-1,3,3,'#fff');R(x,y,1,2,'#111')};
+  switch(d.s){
+    case'blob':E(20,27,12,10,a);E(15,23,3,2,'#fff');P(b,[[11,20],[20,6],[29,20]]);R(19,4,3,3,'#fff');eye(16,27);eye(24,27);R(12,31,3,1,'#ffb3c1');R(26,31,3,1,'#ffb3c1');R(18,32,4,1,'#334');break;
+    case'frog':E(20,28,14,8,a);E(12,18,5,5,a);E(28,18,5,5,a);eye(12,18);eye(28,18);R(11,30,18,1,b);E(7,35,5,2,b);E(33,35,5,2,b);E(20,31,8,3,'#a9c46a');break;
+    case'bird':E(19,22,10,9,a);P(a,[[13,20],[2,30],[16,28]]);P(b,[[27,18],[37,21],[27,24]]);eye(24,19);R(16,31,1,6,b);R(22,31,1,6,b);R(13,37,6,1,b);R(19,37,6,1,b);break;
+    case'ghost':E(20,14,10,9,a);R(10,14,20,17,a);[[10,13,16],[16,19,22],[22,25,28]].forEach(([l,m,r])=>P(a,[[l,30],[m,36],[r,30]]));P(a,[[28,30],[30,35],[30,30]]);for(let x=12;x<30;x+=4)R(x,7,1,24,b);R(14,13,3,5,'#111');R(23,13,3,5,'#111');E(20,24,3,2,'#111');break;
+    case'snake':g.lineCap='round';g.strokeStyle=a;g.lineWidth=5;[[20,33,13,4],[19,27,10,3.5]].forEach(([x,y,rx,ry])=>{g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.stroke()});g.beginPath();g.moveTo(26,26);g.quadraticCurveTo(30,20,27,15);g.stroke();g.strokeStyle=b;g.lineWidth=1;g.beginPath();g.ellipse(20,33,13,4,0,0,7);g.stroke();E(27,13,7,5,a);eye(29,12);R(33,15,5,1,'#e33');R(37,14,1,1,'#e33');R(37,16,1,1,'#e33');break;
+    case'fish':P(a,[[8,22],[1,13],[1,31]]);E(20,22,13,8,a);E(16,19,4,3,b);E(24,25,3,2,b);E(11,23,2,2,b);P(a,[[17,15],[22,8],[25,15]]);eye(29,20);R(32,23,2,1,'#111');R(30,26,6,1,b);break;
+    case'boar':R(8,15,17,3,b);E(18,25,13,9,a);E(30,24,7,7,a);E(35,26,3,3,'#c99c7a');R(34,25,1,1,'#111');R(36,25,1,1,'#111');P('#fff',[[31,29],[29,35],[34,30]]);eye(30,21);P(b,[[24,16],[27,10],[29,17]]);[9,14,22,27].forEach(x=>R(x,32,3,6,b));break;
+    case'wind':g.lineCap='round';g.strokeStyle=a;g.lineWidth=3;g.beginPath();g.arc(20,22,14,.4,5.4);g.stroke();g.strokeStyle=b;g.lineWidth=2;g.beginPath();g.arc(20,22,10,2,7);g.stroke();E(20,22,7,7,a);eye(17,21);eye(23,21);R(17,25,6,1,'#335');R(4,8,8,1,b);R(30,34,8,1,b);break;
+    case'snowman':E(20,30,12,8,a);E(20,16,8,7,a);P(b,[[12,11],[28,11],[25,3],[15,3]]);eye(17,15);eye(23,15);P('#111',[[14,12],[19,13],[19,14]]);P('#111',[[26,12],[21,13],[21,14]]);R(20,17,5,2,'#f80');g.strokeStyle='#6e4c2a';g.lineWidth=1.5;g.beginPath();g.moveTo(9,26);g.lineTo(1,20);g.moveTo(31,26);g.lineTo(39,19);g.stroke();R(19,27,2,2,'#333');R(19,32,2,2,'#333');break;
+    case'cloud':P(b,[[21,26],[16,35],[20,34],[17,40],[25,30],[21,31],[24,26]]);E(13,20,8,7,a);E(22,14,10,9,a);E(30,20,8,7,a);E(21,23,14,7,a);E(18,12,4,2,'#7d82a3');eye(16,20);eye(26,20);P('#111',[[13,16],[19,18],[19,19]]);P('#111',[[29,16],[23,18],[23,19]]);break;
+    case'oni':E(20,31,12,8,a);E(20,16,11,10,a);R(10,7,20,4,b);P('#ffe08a',[[12,9],[13,0],[17,8]]);P('#ffe08a',[[28,9],[27,0],[23,8]]);eye(16,15);eye(24,15);R(14,20,12,3,'#111');R(15,20,2,2,'#fff');R(23,20,2,2,'#fff');R(33,22,4,14,'#6e4c2a');E(35,21,4,4,'#6e4c2a');break;
+    case'knight':P(a,[[9,15],[31,15],[20,39]]);P(b,[[9,15],[14,15],[20,39]]);E(20,11,8,8,b);R(13,10,14,3,'#112');R(16,11,2,1,'#7ff');R(22,11,2,1,'#7ff');P(a,[[16,4],[20,0],[24,4]]);P(a,[[34,2],[36,2],[36,30],[34,30]]);R(31,29,8,2,b);break;
+    case'daruma':E(20,23,15,15,a);E(20,19,9,8,b);eye(16,18);R(22,17,3,3,'#fff');g.strokeStyle='#111';g.lineWidth=1;g.strokeRect(22.5,17.5,2,2);P('#111',[[13,15],[18,14],[18,15]]);P('#111',[[27,15],[22,14],[22,15]]);R(16,23,8,2,'#222');R(9,31,22,2,'#e2b23c');R(12,34,16,1,'#e2b23c');R(12,9,4,2,'#ffe3b3');break;
+    case'cormorant':P(a,[[10,20],[1,33],[15,33]]);E(18,27,9,11,a);R(21,9,5,15,a);E(26,9,6,5,a);P(b,[[30,7],[39,10],[30,12]]);eye(27,8);E(36,14,4,2,'#ff6d4a');R(34,14,2,1,'#fff');R(14,37,5,2,b);R(20,37,5,2,b);E(16,24,3,5,'#30384a');break;
+    case'bull':P(b,[[10,15],[1,9],[2,5],[13,11]]);P(b,[[30,15],[39,9],[38,5],[27,11]]);E(20,22,13,12,a);R(18,11,4,11,b);E(20,31,8,5,'#c99c7a');R(16,30,2,2,'#111');R(22,30,2,2,'#111');g.strokeStyle='#e2b23c';g.lineWidth=1.5;g.beginPath();g.arc(20,35,3,0,Math.PI);g.stroke();eye(13,19);eye(27,19);R(5,37,30,3,'#c8352d');R(9,37,3,3,'#e2b23c');R(28,37,3,3,'#e2b23c');break;
+    case'yukionna':R(10,5,20,24,'#1a1c2a');R(8,14,3,18,'#1a1c2a');R(29,14,3,18,'#1a1c2a');P(a,[[13,18],[27,18],[33,39],[7,39]]);P(b,[[17,21],[23,21],[26,39],[14,39]]);R(13,18,14,2,'#c8d8f0');E(20,12,6,7,'#fbfdff');R(17,11,2,1,'#3a5a9a');R(22,11,2,1,'#3a5a9a');R(19,15,2,1,'#c84a6a');R(8,14,3,18,'#1a1c2a');R(29,14,3,18,'#1a1c2a');P('#ffffff',[[4,8],[5,6],[6,8]]);P('#ffffff',[[34,4],[35,2],[36,4]]);P('#ffffff',[[2,24],[3,22],[4,24]]);break;
+    case'mujina':E(20,29,12,9,a);E(20,17,10,9,a);E(12,10,3,4,a);E(28,10,3,4,a);E(15,17,4,3,b);E(25,17,4,3,b);eye(15,17);eye(25,17);E(20,21,3,2,'#111');E(20,25,5,3,'#e8dcc4');E(34,30,6,3,a);R(36,28,4,1,b);R(12,36,4,3,b);R(24,36,4,3,b);P('#3a7a3a',[[17,6],[20,0],[23,6]]);break;
+    case'deer':g.strokeStyle='#e8d6b0';g.lineWidth=1.5;g.beginPath();g.moveTo(26,10);g.lineTo(24,2);g.moveTo(25,6);g.lineTo(21,4);g.moveTo(31,10);g.lineTo(34,2);g.moveTo(33,6);g.lineTo(37,5);g.stroke();E(17,24,11,7,a);[[8,29],[12,29],[21,29],[25,29]].forEach(([x,y])=>R(x,y,2,9,a));R(26,14,5,12,a);E(29,13,5,4,a);R(33,13,3,2,'#3a2616');eye(29,12);[[12,21],[17,23],[21,20],[14,26]].forEach(([x,y])=>R(x,y,2,2,b));E(7,22,2,2,b);break;
+    case'hawk':P(a,[[20,14],[2,8],[6,20],[18,22]]);P(a,[[20,14],[38,8],[34,20],[22,22]]);E(20,20,6,9,a);E(20,22,4,6,b);E(20,11,5,5,a);eye(18,10);eye(22,10);P('#e2b23c',[[18,13],[22,13],[20,17]]);[[17,22],[21,25],[19,28]].forEach(([x,y])=>R(x,y,2,1,a));R(16,29,2,5,'#e2b23c');R(22,29,2,5,'#e2b23c');break;
+    case'serow':E(18,25,12,8,a);R(28,12,6,14,a);E(31,12,5,5,a);P(b,[[28,8],[29,2],[30,8]]);P(b,[[32,8],[33,2],[34,8]]);E(34,15,3,3,'#d8d2c8');eye(31,11);[[8,30],[13,30],[21,30],[26,30]].forEach(([x,y])=>R(x,y,3,8,b));R(10,19,16,2,'#a8a29a');break;
+    case'bear':E(20,26,14,12,a);E(20,13,10,9,a);E(12,6,3,3,a);E(28,6,3,3,a);E(20,17,5,4,'#4a4050');eye(16,12);eye(24,12);R(19,15,2,2,'#111');P(b,[[12,24],[20,28],[28,24],[20,26]]);E(7,26,4,7,a);E(33,26,4,7,a);[[5,30],[34,30]].forEach(([x,y])=>{R(x,y,1,2,'#ddd');R(x+2,y,1,2,'#ddd')});break;
+    case'eagle':P(a,[[20,12],[0,4],[4,14],[1,20],[16,22]]);P(a,[[20,12],[40,4],[36,14],[39,20],[24,22]]);E(20,22,7,10,a);E(20,10,5,5,'#8a6a40');eye(19,9);eye(23,9);P(b,[[22,11],[27,13],[22,15]]);R(16,32,2,5,b);R(22,32,2,5,b);[[4,8],[36,8],[10,16],[30,16]].forEach(([x,y])=>R(x,y,3,1,'#2a1d12'));break;
+    case'serpent':g.lineCap='round';g.strokeStyle=a;g.lineWidth=7;g.beginPath();g.moveTo(4,36);g.bezierCurveTo(16,40,30,36,28,28);g.bezierCurveTo(26,22,10,26,12,18);g.bezierCurveTo(14,10,24,12,24,8);g.stroke();g.strokeStyle=b;g.lineWidth=2;g.beginPath();g.moveTo(4,37);g.bezierCurveTo(16,41,30,37,28,29);g.stroke();E(26,7,8,6,a);R(29,4,3,2,'#ff3b3b');R(23,4,3,2,'#ff3b3b');R(31,10,6,1,'#c00');R(36,9,1,1,'#c00');R(36,11,1,1,'#c00');P('#fff',[[27,11],[28,14],[29,11]]);break;
+    case'dragon':g.lineCap='round';g.strokeStyle=a;g.lineWidth=6;g.beginPath();g.moveTo(2,38);g.bezierCurveTo(10,26,30,38,32,24);g.bezierCurveTo(34,14,22,14,20,18);g.stroke();g.strokeStyle=b;g.lineWidth=1.5;g.beginPath();g.moveTo(3,36);g.bezierCurveTo(10,25,30,36,31,24);g.stroke();E(18,14,9,7,a);R(9,15,6,4,a);R(5,16,5,3,'#2a6a5a');P(b,[[12,8],[13,2],[15,7],[18,1],[21,7],[23,2],[24,8]]);R(17,4,2,2,'#e33');R(13,13,4,2,'#fff');R(20,13,4,2,'#fff');R(14,13,2,2,'#c00');R(21,13,2,2,'#c00');g.strokeStyle='#ffe08a';g.lineWidth=1;g.beginPath();g.moveTo(8,17);g.quadraticCurveTo(2,20,4,26);g.moveTo(9,19);g.quadraticCurveTo(6,24,9,28);g.stroke();P('#ffe08a',[[26,10],[34,4],[30,12]]);P(b,[[30,22],[36,20],[33,26]]);P(b,[[20,30],[24,26],[25,32]]);break;
+    case'king':P('#ffe14d',[[5,28],[2,36],[5,35],[3,40],[9,32],[6,33],[8,28]]);P('#ffe14d',[[34,28],[31,36],[34,35],[32,40],[38,32],[35,33],[37,28]]);E(9,22,7,6,a);E(31,22,7,6,a);E(20,17,11,8,a);E(20,25,16,10,a);P(b,[[11,11],[13,2],[16,7],[20,0],[24,7],[27,2],[29,11]]);R(19,5,2,2,'#e33');R(13,8,2,2,'#4fc3ff');R(25,8,2,2,'#4fc3ff');R(12,19,6,4,'#fff');R(22,19,6,4,'#fff');R(15,20,2,3,'#c00');R(24,20,2,3,'#c00');P('#111',[[11,16],[19,19],[19,20],[11,18]]);P('#111',[[29,16],[21,19],[21,20],[29,18]]);R(14,28,12,3,'#111');R(15,28,2,2,'#fff');R(23,28,2,2,'#fff');break;
+  }
+  return sprC[k]=c;
+}
+function calc(at,df){const base=at-df/2;if(base<1)return Math.random()<.5?1:0;return Math.max(1,Math.round(base*(.8+Math.random()*.3)))}
+async function battle(key){
+  const d=EN[key],E={...d,key,hp:d.hp,mhp:d.hp};
+  SFX.enc();$('#area').hidden=true;closeAll();
+  B={E,zone:d.boss?'boss':zoneAt(S.x,S.y),flash:0,hurt:0,shake:0,fade:0,t0:performance.now()};
+  scene='trans';await wait(420);scene='battle';showStat();
+  await say(`${E.n}が あらわれた！`);
+  let result=null;
+  while(!result){
+    showStat();
+    const c=await choose(['たたかう','じゅもん','どうぐ','にげる'],{cls:'bcmd',cancel:false,hideMsg:true});
+    let act;
+    if(c===0)act={t:'atk'};
+    else if(c===1){const sp=await pickSpell(true);if(!sp)continue;act={t:'spell',sp}}
+    else if(c===2){const it=await pickItem(true);if(!it)continue;act={t:'item',it}}
+    else act={t:'run'};
+    lines=[];msgEl.hidden=true;
+    const first=S.agi*(.6+Math.random()*.8)>=E.ag*(.6+Math.random()*.8)||act.t==='run';
+    const seq=first?['p','e']:['e','p'];
+    for(const who of seq){
+      if(who==='p'){const r=await playerAct(act,E);if(r==='run'){result='run';break}if(E.hp<=0){result='win';break}}
+      else{await enemyAct(E);if(S.hp<=0){result='lose';break}}
+    }
+  }
+  if(result==='run'){await wait(250);scene='field';B=null;return'run'}
+  if(result==='win'){
+    B.fade=performance.now();SFX.win();
+    await say(d.win||`${E.n}を やっつけた！`,{append:1});
+    if(d.ex){S.exp+=d.ex;S.gold+=d.g;await say(`けいけんち ${d.ex}ポイント、${d.g}ゴールドを かくとく！`,{append:1});await levelUps()}
+    scene='field';B=null;return'win';
+  }
+  await say(`${S.name}は ちからつきた……`,{append:1});
+  scene='field';B=null;closeAll();
+  S.gold=Math.floor(S.gold/2);S.hp=S.mhp;S.mp=S.mmp;S.x=S.rx=SX;S.y=S.ry=SY;S.dir='down';moving=null;
+  await say('……気がつくと 小千谷駅の まちあいしつで ねむっていた。');
+  await say('おかねが はんぶんに なってしまった。');
+  return'lose';
+}
+async function levelUps(){
+  while(S.exp>=need(S.lv+1)){
+    const before=known().map(s=>s.id);
+    S.lv++;const hp=rint(5,8),mp=rint(2,3),st=rint(2,3),vi=rint(1,2),ag=rint(1,2);
+    S.mhp+=hp;S.mmp+=mp;S.str+=st;S.vit+=vi;S.agi+=ag;updStat();SFX.lvl();
+    await say(`${S.name}は レベル ${S.lv}に あがった！`,{append:1});
+    await say(`HP+${hp} MP+${mp} ちから+${st} みのまもり+${vi} すばやさ+${ag}`,{append:1});
+    for(const s of known())if(!before.includes(s.id))await say(`じゅもん「${s.n}」を おぼえた！`,{append:1});
+  }
+}
+const now=()=>performance.now();
+async function hitEnemy(E,dmg){E.hp=Math.max(0,E.hp-dmg);B.flash=now()+360;SFX.hit();await say(`${E.n}に ${dmg}の ダメージ！`,{append:1,auto:650})}
+async function hurtMe(dmg){S.hp=Math.max(0,S.hp-dmg);B.hurt=now()+300;B.shake=RM?0:now()+300;SFX.hurt();updStat();await say(`${S.name}は ${dmg}の ダメージを うけた！`,{append:1,auto:650})}
+async function playerAct(a,E){
+  if(a.t==='atk'){
+    await say(`${S.name}の こうげき！`,{append:1,auto:380});
+    if(Math.random()<1/22){await say('かいしんの いちげき！',{append:1,auto:380});return hitEnemy(E,Math.round(atk()*(1+Math.random()*.15)))}
+    if(Math.random()<1/24){SFX.bump();return say('ミス！ ダメージを あたえられない！',{append:1,auto:650})}
+    return hitEnemy(E,calc(atk(),E.df));
+  }
+  if(a.t==='spell'){
+    const sp=a.sp;S.mp-=sp.mp;updStat();SFX.magic();
+    await say(`${S.name}は ${sp.n}を となえた！`,{append:1,auto:420});
+    if(sp.t==='heal'){const v=Math.min(S.mhp-S.hp,rint(...sp.p));S.hp+=v;updStat();SFX.heal();return say(`HPが ${v} かいふくした！`,{append:1,auto:650})}
+    const bonus=sp.id==='big'?S.lv*2:S.lv;
+    return hitEnemy(E,rint(...sp.p)+bonus-Math.floor(E.df/5));
+  }
+  if(a.t==='item')return useItem(a.it,true);
+  await say(`${S.name}は にげだした！`,{append:1,auto:380});
+  if(E.boss){await say('しかし まわりこまれて しまった！',{append:1,auto:650});return}
+  if(Math.random()<clamp(.55+(S.agi-E.ag)*.05,.25,.92))return'run';
+  await say('しかし まわりこまれて しまった！',{append:1,auto:650});
+}
+async function enemyAct(E){
+  const r=Math.random();
+  if(E.key==='donyori'){
+    if(E.hp<E.mhp*.35&&!E.healed&&r<.5){E.healed=1;E.hp+=90;SFX.magic();return say('どんより大王は くもを あつめて HPを かいふくした！',{append:1,auto:800})}
+    if(r<.22){await say('どんより大王は かみなりを おとした！',{append:1,auto:420});return hurtMe(rint(30,42))}
+    if(r<.42){await say('どんより大王は おおあめを ふらせた！',{append:1,auto:420});return hurtMe(rint(18,26))}
+  }
+  if(E.sp==='double'&&r<.22){await say(`${E.n}は するどい ツメで 2かい ひっかいた！`,{append:1,auto:420});await hurtMe(calc(E.at,def()));if(S.hp<=0)return;return hurtMe(calc(E.at,def()))}
+  if(E.sp==='maul'&&r<.25){await say(`${E.n}は 立ちあがって おそいかかってきた！`,{append:1,auto:420});return hurtMe(Math.round(calc(E.at,def())*1.6)+2)}
+  if(E.sp==='dive'&&r<.25){await say(`${E.n}は 空から きゅうこうかしてきた！`,{append:1,auto:420});return hurtMe(Math.round(calc(E.at,def())*1.5)+1)}
+  if(E.sp==='bind'&&r<.25){await say(`${E.n}は ${S.name}に まきついて しめあげた！`,{append:1,auto:420});return hurtMe(rint(20,28))}
+  if(E.sp==='breath'&&r<.3){await say(`${E.n}は ごうかの いきを はいた！`,{append:1,auto:420});return hurtMe(rint(28,38))}
+  if(E.sp==='freeze'&&r<.3){await say(`${E.n}は つめたい いきを ふきかけた！`,{append:1,auto:420});return hurtMe(rint(13,19))}
+  if(E.sp==='trick'&&r<.22){const g=Math.min(S.gold,rint(5,15));S.gold-=g;await say(`${E.n}は ${S.name}を ばかした！`,{append:1,auto:420});return say(g?`きがつくと ${g}ゴールド なくなっていた！`:'しかし なにも とられなかった。',{append:1,auto:700})}
+  if(E.sp==='thunder'&&r<.3){await say(`${E.n}は いなずまを はなった！`,{append:1,auto:420});return hurtMe(rint(14,20))}
+  if(E.sp==='wind'&&r<.25){await say(`${E.n}は こがらしを ふかせた！`,{append:1,auto:420});return hurtMe(rint(10,16))}
+  if(E.key==='daruma'&&r<.28){await say('しけりダルマは ごろごろ ころがってきた！',{append:1,auto:420});return hurtMe(Math.round(calc(E.at,def())*1.6)+2)}
+  if(E.key==='kawau'&&r<.15){await say('カワウのおやぶんは つばさで あおいだ！ すばやい 2れんげき！',{append:1,auto:420});await hurtMe(calc(E.at,def()));if(S.hp<=0)return;return hurtMe(calc(E.at,def()))}
+  if(E.key==='gonzo'&&r<.3){await say('ゴンゾウは つのを ふりかざして つきあげた！',{append:1,auto:420});return hurtMe(Math.round(calc(E.at,def())*1.7)+3)}
+  await say(`${E.n}の こうげき！`,{append:1,auto:380});
+  if(Math.random()<1/16){SFX.bump();return say(`${S.name}は ひらりと みをかわした！`,{append:1,auto:650})}
+  return hurtMe(calc(E.at,def()));
+}
+
+/* ---------- 場所のイベント ---------- */
+const EVS=()=>({station:evStation,honcho:evHoncho,katakai:evKatakai,koi:evKoi,park:evPark,east:evEast,summit:evSummit,chijimi:evChijimi,matoonsen:evMatoOnsen,tofu:evTofu,kanakura:evKanakura,odyaru:evOdyaru});
+async function locEvent(id){const f=EVS()[id];if(f)await f()}
+function hint(){
+  if(S.f.clear)return'長老「空が はれて、まちじゅう 大よろこびじゃ。ほんとうに ありがとう」';
+  if(!S.k.uroko)return'長老「まずは すぐ となりの 錦鯉の里じゃ。この 本町から 南へ 一歩じゃよ」';
+  if(!S.k.tama)return'長老「つぎは 北の 片貝じゃ。関越道に そって 北へ ずっと すすむと、浅原神社の まちに つく」';
+  if(!S.k.tsuna)return'長老「のこるは 東の 山あい、小栗山の 小千谷闘牛場じゃ。小千谷大橋を わたって 東へ。牛は つよいぞ」';
+  return'長老「三つの宝が そろったな！ 山本大橋を わたった さきの 山本山へ むかうのじゃ」';
+}
+async function evHoncho(){
+  if(!S.f.met){
+    S.f.met=1;
+    await say('長老「おお、旅のお人か。よう来てくれた」');
+    await say('長老「山本山に どんより大王が いすわってから、おぢやの 空は ずっと くもったままじゃ」');
+    await say('長老「山へ つづく みちには くろい雲の けっかいが ある。やぶるには 三つの宝が いる」');
+    await say('長老「片貝の 三尺玉の火種、錦鯉の里の 紅白のうろこ、東山の 角突きの綱じゃ」');
+    S.gold+=40;S.it.dango+=2;SFX.get();
+    await say(`${S.name}は 40ゴールドと 笹だんご2こを うけとった！`);
+  }
+  for(;;){
+    showStat();
+    const c=await choose(['はなす','ぶきや','ぼうぐや','でる'],{title:'本町'});
+    if(c<0||c===3)return;
+    if(c===0)await say(hint());
+    if(c===1)await shop('w');
+    if(c===2)await shop('a');
+    msgEl.hidden=true;
+  }
+}
+async function evStation(){
+  const cost=4+S.lv*2;
+  for(;;){
+    showStat();
+    const c=await choose([{label:'やどや',right:cost+'G'},'どうぐや','はなす','でる'],{title:'小千谷駅前'});
+    if(c<0||c===3)return;
+    if(c===0){
+      if(S.gold<cost){await say('やどや「おかねが たりないようですね……」');continue}
+      S.gold-=cost;await say('やどや「ごゆっくり おやすみください」');
+      msgEl.hidden=true;await wait(250);SFX.inn();await wait(900);
+      S.hp=S.mhp;S.mp=S.mmp;updStat();save();
+      await say('ぐっすり ねむって HPと MPが かいふくした！');
+      await say('ぼうけんの きろくを のこした。',{append:1});
+    }
+    if(c===1)await shop('i');
+    if(c===2)await say(['えきいん「南に 見えるのが 山本山。ちかごろは くろい雲で のぼれないんですよ」','たびびと「小千谷の へぎそば、つるっと おいしかったなあ」','こども「旭橋を 西に わたると 本町だよ！ 錦鯉の里も すぐそこ！」'][Math.random()*3|0]);
+    msgEl.hidden=true;
+  }
+}
+async function shop(kind){
+  for(;;){
+    const list=kind==='w'?WEAP.slice(1):kind==='a'?ARM.slice(1):Object.entries(ITEMS).filter(([id,x])=>(x.shop||'i')===kind).map(([id,x])=>({...x,id}));
+    const c=await choose(list.map(x=>({label:x.n+(x.a?` +${x.a}`:x.d?` +${x.d}`:''),right:x.p+'G'})),{title:`もちきん ${S.gold}G`});
+    if(c<0)return;
+    const x=list[c];
+    if(S.gold<x.p){await say('みせ「おかねが たりないようだね」');continue}
+    if(kind==='i'||kind==='t'){if((S.it[x.id]||0)>=9){await say('みせ「それいじょうは もてないよ」');continue}S.gold-=x.p;S.it[x.id]=(S.it[x.id]||0)+1;SFX.get();await say(`${x.n}を かった！`);continue}
+    const cur=kind==='w'?S.wpn:S.arm,idx=c+1;
+    if(idx<=cur){await say('みせ「いま もっている ほうが つよいよ」');continue}
+    const old=(kind==='w'?WEAP:ARM)[cur],back=Math.floor(old.p/2);
+    S.gold+=back-x.p;if(kind==='w')S.wpn=idx;else S.arm=idx;SFX.get();
+    await say(`${x.n}を そうびした！`+(back?` ${old.n}は ${back}Gで したどりしてもらった。`:''));
+  }
+}
+async function evChijimi(){
+  const cost=6;
+  for(;;){
+    showStat();
+    const c=await choose([{label:'日帰り温泉',right:cost+'G'},'うりば','でる'],{title:'道の駅 ちぢみの里'});
+    if(c<0||c===2)return;
+    if(c===0){if(S.gold<cost){await say('うけつけ「おかねが たりないようですね」');continue}
+      S.gold-=cost;S.hp=S.mhp;S.mp=S.mmp;updStat();SFX.heal();await say('あったかい お湯で ぽかぽか。HPと MPが かいふくした！')}
+    if(c===1)await shop('i');
+    msgEl.hidden=true;
+  }
+}
+async function evMatoOnsen(){
+  const cost=5;
+  for(;;){
+    showStat();
+    const c=await choose([{label:'温泉に つかる',right:cost+'G'},'はなす','でる'],{title:'真人温泉'});
+    if(c<0||c===2)return;
+    if(c===0){if(S.gold<cost){await say('番台「おかねが たりないようだね」');continue}
+      S.gold-=cost;S.hp=S.mhp;S.mp=S.mmp;updStat();SFX.heal();await say('山あいの しずかな お湯。からだの しんまで あたたまった！\nHPと MPが かいふくした！')}
+    if(c===1)await say(['湯治客「このへんの 山には むじなが すんでいて、人を ばかすんだとさ」','番台「ゆきの よるは 雪女が でる。見かけても こえを かけちゃ いけないよ」','湯治客「真人の とうふを たべたかい？ 大豆と 水が ちがうんだ」'][Math.random()*3|0]);
+    msgEl.hidden=true;
+  }
+}
+async function evTofu(){
+  for(;;){
+    showStat();
+    const c=await choose(['かう','はなす','でる'],{title:'真人豆腐店'});
+    if(c<0||c===2)return;
+    if(c===0)await shop('t');
+    if(c===1)await say(['おかみさん「真人の 山の 水で つくった とうふだよ。たべると げんきが でるよ」','おかみさん「むじなが あぶらあげを ねらって くるのよ。こまったもんだ」'][Math.random()*2|0]);
+    msgEl.hidden=true;
+  }
+}
+async function evKanakura(){
+  if(S.f.kana)return say('金倉山の 展望台から 小千谷の まちと 信濃川が 一望できる。');
+  S.f.kana=1;S.gold+=150;S.it.soba+=2;SFX.get();save();
+  await say('展望台の ベンチの したに つつみが おいてある……');
+  await say(`${S.name}は 150ゴールドと へぎそば2こを 手に入れた！`,{append:1});
+}
+async function evOdyaru(){
+  const cost=4+S.lv*2;
+  showStat();
+  const c=await choose([{label:'テントで やすむ',right:cost+'G'},'はなす','でる'],{title:'おぢゃ～る'});
+  if(c===0){if(S.gold<cost)return say('キャンプの ひと「おかねが たりないよ」');
+    S.gold-=cost;msgEl.hidden=true;SFX.inn();await wait(900);S.hp=S.mhp;S.mp=S.mmp;updStat();save();
+    await say('たき火の そばで ぐっすり ねむった。HPと MPが かいふくした！');await say('ぼうけんの きろくを のこした。',{append:1})}
+  if(c===1)await say('キャンプの ひと「山本山の 山頂は すぐ そこ。でも くろい雲が うずまいていて ちかづけないんだ」');
+}
+async function evPark(){
+  await say('船岡公園の あずまやで ひとやすみ……');
+  S.hp=S.mhp;S.mp=S.mmp;updStat();SFX.heal();
+  await say('しなの川を わたる 風が ここちいい。HPと MPが かいふくした！',{append:1});
+}
+async function questBoss(flag,key,intro,ask,refuse,reward,after){
+  if(S.k[flag])return say(after);
+  for(const l of intro)await say(l);
+  const c=await choose(['たすける','またこんど'],{title:ask});
+  if(c!==0)return say(refuse);
+  msgEl.hidden=true;
+  const r=await battle(key);if(r!=='win')return;
+  closeAll();
+  for(const l of reward.lines)await say(l);
+  S.k[flag]=1;SFX.get();await say(`${S.name}は ${KEYS[flag]}を 手に入れた！`);
+  if(reward.extra)await say(reward.extra);
+  save();
+}
+const evKatakai=()=>questBoss('tama','daruma',
+  ['花火師「たいへんだ！ 三尺玉の 蔵に しけりダルマが いすわって、火薬が ぜんぶ しけっちまう！」'],'しけりダルマを おいはらう？',
+  '花火師「たのむよ……。らいねんの 浅原神社の まつりに まにあわなくなっちまう」',
+  {lines:['花火師「ありがてえ！ これが 三尺玉の 火種だ。もってってくれ！」'],extra:'火種の あたたかさが からだに しみこむ……　じゅもん「さんじゃくだま」を おぼえた！'},
+  '花火師「片貝の 三尺玉は 空いっぱいに ひらくんだ。どんより空じゃ もったいねえよ」');
+const evKoi=()=>questBoss('uroko','kawau',
+  ['池守「カワウの おやぶんが 池の 錦鯉を ねらって はなれないんだ！」','池守「ここは 錦鯉 はっしょうの 地。鯉たちを まもってくれ！」'],'カワウのおやぶんを おいはらう？',
+  '池守「ああ、また 一ぴき ねらわれてる……」',
+  {lines:['池守「たすかった！ この 紅白の うろこを。鯉たちからの おれいだよ」']},
+  '池守「紅白、大正三色、昭和三色……。鯉たちも げんきに およいでるよ」');
+const evEast=()=>questBoss('tsuna','gonzo',
+  ['牛持ち「角突きは ひきわけで おわらせるのが ならわしだ。だが よこづなの ゴンゾウが どんより空で いらだって、手が つけられねえ！」','牛持ち「力くらべで しずめてやってくれ！」'],'ゴンゾウと 力くらべする？',
+  '牛持ち「むりもねえ。あいつは 東山いちの 大牛だからな」',
+  {lines:['牛持ち「みごとだ！ ゴンゾウも すっきりした 顔してる」','牛持ち「この 角突きの綱を もっていけ。勢子の あかしだ」']},
+  '牛持ち「ゴンゾウは きげんが いいよ。こんどは 角突きを 見においで」');
+async function sealEvent(){
+  const n=Object.keys(KEYS).filter(k=>S.k[k]).length;
+  if(n<3){SFX.bump();await say(`くろい雲が うずまいて さきへ すすめない……\n三つの宝が ひつようだ。（いま ${n} / 3）`);return}
+  await say('三つの宝が ひかりだした！');
+  SFX.magic();await wait(400);
+  openSeal();S.f.seal=1;save();
+  await say('くろい雲の けっかいが はれて、山本山への みちが ひらけた！',{append:1});
+}
+async function evSummit(){
+  if(S.f.clear)return say('山頂から おぢやの まちと しなの川が 見わたせる。いい ながめだ。');
+  await say('どんより大王「ぐわはは！ この空は わしのものよ。ずっと くもりで、ずっと みぞれじゃ！」');
+  await say('どんより大王「三つの宝で けっかいを やぶったか。だが ここまでよ！」');
+  msgEl.hidden=true;
+  const r=await battle('donyori');if(r!=='win')return;
+  await ending();
+}
+async function ending(){
+  closeAll();S.f.clear=1;save();
+  scene='ending';B={t0:performance.now()};$('#area').hidden=true;
+  await wait(600);
+  await say('くもが ゆっくり はれていく……');
+  await say('ひさしぶりの 青空に、色とりどりの 熱気球が うかびあがった！');
+  await say('まるで 風船一揆の ような けしきに、まちじゅうから 歓声が あがる。');
+  await say(`おぢやに 青空を とりもどした ${S.name}の なまえは、ながく かたりつがれたという。`);
+  msgEl.hidden=true;
+  await view(`<h3>おしまい</h3><div class="g"><span>${S.name}</span><span>Lv ${S.lv}</span><span>ぶき</span><span>${WEAP[S.wpn].n}</span><span>よろい</span><span>${ARM[S.arm].n}</span><span>ゴールド</span><span>${S.gold} G</span></div><p style="margin:.5em 0 0;color:var(--dim)">A で 晴れた おぢやを さんぽする</p>`);
+  scene='field';B=null;updArea();
+}
+
+/* ---------- 描画 ---------- */
+function balloon(g,x,y,s,c1,c2){EL(g,c1,x,y,6*s,7*s);EL(g,c2,x,y,2.2*s,7*s);g.strokeStyle='rgba(30,20,10,.8)';g.lineWidth=.6;g.beginPath();g.moveTo(x-4*s,y+5*s);g.lineTo(x-1.5*s,y+9*s);g.moveTo(x+4*s,y+5*s);g.lineTo(x+1.5*s,y+9*s);g.stroke();px(g,'#6e4c2a',x-1.5*s,y+9*s,3*s,2.4*s)}
+const BAL=[['#e8463a','#ffd25e'],['#3a7be8','#ffffff'],['#ffd25e','#e8463a'],['#3fb37a','#ffffff'],['#9b59d0','#ffd25e'],['#ff8a3c','#3a7be8']];
+function drawBalloons(t,n,speed){for(let i=0;i<n;i++){const s=i%3===0?1.4:1;const y=176+30-((t*speed*(0.6+(i%4)*.15)+i*67)%240);const x=(i*53+Math.sin(t/1400+i)*8+20)%240;balloon(ctx,x,y,s,...BAL[i%BAL.length])}}
+function drawField(t){
+  const f=(t/420|0)%2;
+  let cx=Math.round(S.rx*TS+8-VW*TS/2),cy=Math.round(S.ry*TS+8-VH*TS/2);
+  cx=clamp(cx,0,W*TS-VW*TS);cy=clamp(cy,0,H*TS-VH*TS);
+  const x0=Math.floor(cx/TS),y0=Math.floor(cy/TS);
+  for(let y=y0;y<=y0+VH;y++)for(let x=x0;x<=x0+VW;x++){if(x>=W||y>=H)continue;ctx.drawImage(tileImg(x,y,f),x*TS-cx,y*TS-cy)}
+  if(!S.f.clear){const sx=SUM[0]*TS-cx+8,sy=SUM[1]*TS-cy;if(sx>-40&&sx<280&&sy>-40&&sy<220){[[0,-6,12,6],[-9,-3,8,5],[9,-3,8,5]].forEach(([dx,dy,rx,ry])=>EL(ctx,'rgba(52,44,80,.9)',sx+dx,sy+dy,rx,ry))}}
+  ctx.font='9px DotGothic16, monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  for(const k in LOC){const sv=SVC[LOC[k].id];if(!sv)continue;const[lx,ly]=k.split(',').map(Number);const bx=lx*TS-cx+8,by=ly*TS-cy-5;if(bx<-30||bx>270||by<-10||by>190)continue;
+    const w=Math.ceil(ctx.measureText(sv).width)+6;ctx.fillStyle='rgba(0,0,0,.82)';ctx.fillRect(Math.round(bx-w/2),by-6,w,12);ctx.strokeStyle='#ffd25e';ctx.lineWidth=1;ctx.strokeRect(Math.round(bx-w/2)+.5,by-5.5,w-1,11);ctx.fillStyle='#ffd25e';ctx.fillText(sv,bx,by+.5)}
+  const hx=Math.round(S.rx*TS-cx),hy=Math.round(S.ry*TS-cy);
+  const fr=moving?((t/110|0)%2):0;
+  const img=TI.hero[S.dir==='left'||S.dir==='right'?'side':S.dir][fr];
+  if(S.dir==='left'){ctx.save();ctx.translate(hx+16,hy);ctx.scale(-1,1);ctx.drawImage(img,0,0);ctx.restore()}else ctx.drawImage(img,hx,hy);
+  if(!S.f.clear){
+    ctx.fillStyle='rgba(28,32,62,.3)';ctx.fillRect(0,0,240,176);
+    if(!RM){ctx.strokeStyle='rgba(190,205,240,.45)';ctx.lineWidth=1;ctx.beginPath();for(let i=0;i<34;i++){const x=(i*71+t*.05)%250-5,y=(i*37+t*.32)%186-5;ctx.moveTo(x,y);ctx.lineTo(x-2,y+6)}ctx.stroke()}
+  }
+}
+const BGS={1:['#6aa0d8','#5d9e45'],2:['#5f74a8','#7a8a4a'],3:['#4c4a6e','#6b5a45'],4:['#2a2c48','#c8d4e6'],5:['#9fb6d8','#e9eef6'],boss:['#1e1a30','#3a3550']};
+let ehpKey='';
+function updEhp(){const el=$('#ehp');if(scene!=='battle'||!B||!B.E){if(!el.hidden){el.hidden=true;ehpKey=''}return}
+  const E=B.E,k=E.n+E.hp+'/'+E.mhp;if(k===ehpKey&&!el.hidden)return;ehpKey=k;const r=E.hp/E.mhp;
+  el.innerHTML=`<div class="nm">${E.n}</div><div class="row"><span>HP</span><span>${E.hp} / ${E.mhp}</span></div><div class="bar"><i style="width:${Math.max(0,Math.min(100,r*100))}%"></i></div>`;
+  el.classList.toggle('mid',r<=.5&&r>.25);el.classList.toggle('low',r<=.25);el.hidden=false}
+function drawBattle(t){
+  const[sky,gr]=BGS[B.zone]||BGS[1];
+  const sh=B.shake>t?(Math.random()*6-3|0):0;
+  ctx.save();ctx.translate(sh,0);
+  ctx.fillStyle=sky;ctx.fillRect(-4,0,248,112);ctx.fillStyle=gr;ctx.fillRect(-4,104,248,80);
+  EL(ctx,'rgba(0,0,0,.25)',120,108,46,7);
+  if(!S.f.clear&&B.zone!=='boss'){ctx.fillStyle='rgba(28,32,62,.25)';ctx.fillRect(-4,0,248,176)}
+  const E=B.E,img=enemySprite(E.key),sc=E.boss||E.big?2.6:2.2,w=40*sc;
+  const bob=RM?0:Math.sin(t/300)*1.5;
+  let alpha=1;if(B.fade){alpha=Math.max(0,1-(t-B.fade)/500)}
+  const blink=B.flash>t&&((t/60|0)%2);
+  if(!blink&&alpha>0){ctx.globalAlpha=alpha;ctx.drawImage(img,Math.round(120-w/2),Math.round(110-w+bob),w,w);ctx.globalAlpha=1}
+  ctx.restore();
+  if(B.hurt>t){ctx.fillStyle='rgba(255,70,60,.28)';ctx.fillRect(0,0,240,176)}
+}
+function drawTrans(t){
+  drawField(t);const p=clamp((t-B.t0)/400,0,1);ctx.fillStyle='#000';
+  for(let i=0;i<11;i++){const w=240*p;ctx.fillRect(i%2?240-w:0,i*16,w,16)}
+}
+function drawTitle(t){
+  const g=ctx,gd=g.createLinearGradient(0,0,0,176);gd.addColorStop(0,'#1a1f4a');gd.addColorStop(.6,'#8a5a8a');gd.addColorStop(1,'#f0a070');
+  g.fillStyle=gd;g.fillRect(0,0,240,176);
+  const r=mul(5);for(let i=0;i<40;i++){g.fillStyle=`rgba(255,255,255,${.3+r()*.6})`;g.fillRect(r()*240|0,r()*80|0,1,1)}
+  g.fillStyle='#3a3460';g.beginPath();g.moveTo(0,176);for(let x=0;x<=240;x+=4)g.lineTo(x,120-18*Math.sin(x/38)-10*Math.sin(x/15));g.lineTo(240,176);g.fill();
+  if(!RM)drawBalloons(t,6,.018);else drawBalloons(0,6,0);
+  g.fillStyle='#231f3e';g.beginPath();g.moveTo(0,176);for(let x=0;x<=240;x+=4)g.lineTo(x,140-8*Math.sin(x/22+1));g.lineTo(240,176);g.fill();
+  g.fillStyle='#6f86c8';g.beginPath();g.moveTo(96,176);g.quadraticCurveTo(120,150,112,140);g.lineTo(122,140);g.quadraticCurveTo(136,152,132,176);g.fill();
+}
+let lastT=0;
+function loop(t){
+  if(scene==='field'||scene==='ending'){
+    if(scene==='field'&&!moving&&!busy&&!ui.handler&&held())tryMove(held());
+    if(moving){const p=Math.min(1,(t-moving.t0)/STEP);S.rx=moving.fx+(moving.tx-moving.fx)*p;S.ry=moving.fy+(moving.ty-moving.fy)*p;if(p>=1){S.x=moving.tx;S.y=moving.ty;S.rx=S.x;S.ry=S.y;moving=null;onStep()}}
+    drawField(t);
+    if(scene==='ending')drawBalloons(t-(B?B.t0:0),8,.03);
+  }else if(scene==='trans')drawTrans(t);
+  else if(scene==='battle')drawBattle(t);
+  else if(scene==='title')drawTitle(t);
+  updEhp();
+  if(mapOpen)drawMap(t);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 開始 ---------- */
+async function titleFlow(){
+  scene='title';busy=true;$('#logo').hidden=false;$('#area').hidden=true;
+  const sv=loadSave();
+  const opts=sv?['つづきから','はじめから']:['はじめから'];
+  const c=await choose(opts,{cls:'tmenu',cancel:false});
+  $('#logo').hidden=true;
+  if(sv&&c===0){S=sv;applyState();scene='field';updArea();await say(`${S.name}の ぼうけんを さいかいします。`)}
+  else{
+    newGame();applyState();scene='field';updArea();
+    await say('しなの川の ながれる まち、おぢや。');
+    await say('この秋、山本山に「どんより大王」が いすわり、まちの空は ずっと くもったままだ。');
+    await say(`${S.name}は でんしゃに ゆられて 小千谷駅に おりたった。`);
+    await say('まずは 駅前から 旭橋を 西へ わたって 本町へ。長老に はなしを きこう。');
+    await say('（Aボタンで しらべる・Bボタンで メニュー）');
+  }
+  closeAll();busy=false;updArea();
+}
+function start(data){
+  buildTiles();
+  if(data&&data.S){S=data.S;applyState();scene='field';busy=false;closeAll();updArea()}
+  else titleFlow();
+  requestAnimationFrame(loop);
+}
+window.claude?.hot?.snapshot?.(()=>({S:(scene==='field'&&S)?{...S,x:moving?moving.tx:S.x,y:moving?moving.ty:S.y}:null}));
+const boot=()=>window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+(document.fonts&&document.fonts.load?document.fonts.load('16px DotGothic16').catch(()=>{}):Promise.resolve()).then(boot,boot);
+})();
+</script>
+
+</body></html>
